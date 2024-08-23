@@ -1,10 +1,9 @@
 if __name__ == '__main__':
     import sqlite3
     import pandas as pd
-    from history import history
+    from history import history, history_gaps
     from downloads import downloads
     from autofill import autofill
-    from history_gaps import history_gaps
 
     # Define the path to save the Excel file
     excel_path = 'F:/2023/2023-0492/Edge/edge_browser.xlsx'
