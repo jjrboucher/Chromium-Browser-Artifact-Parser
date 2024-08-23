@@ -1,15 +1,25 @@
 if __name__ == '__main__':
     import sqlite3
     import pandas as pd
+    import tkinter as tk
+    from tkinter import filedialog
     from history import history, history_gaps
     from downloads import downloads
     from autofill import autofill
 
+    # Get the path of the browser profile folder
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+
+    profile_path = filedialog.askdirectory(title="Chrome user profile folder to parse", initialdir=".")
+
     # Define the path to save the Excel file
-    excel_path = 'F:/2023/2023-0492/Edge/edge_browser.xlsx'
+    excel_path = filedialog.asksaveasfilename(title="Select a new XLSX file for output (or overwrite existing)",
+                                              initialdir=profile_path, filetypes=[("Excel Files", "*.xlsx")],
+                                              defaultextension="*.xlsx", confirmoverwrite=True)
 
     # ***Query History***
-    input_file = 'F:/2023/2023-0492/Edge/History'
+    input_file = f'{profile_path}/History'
     query, worksheet_name = history()
 
     conn = sqlite3.connect(input_file)
@@ -60,7 +70,7 @@ if __name__ == '__main__':
     print(f"Query results for {worksheet_name} saved to {excel_path}")
 
     # ***Query autofill***
-    input_file = 'F:/2023/2023-0492/Edge/Web Data'
+    input_file = f'{profile_path}/Web Data'
     query, worksheet_name = autofill()
 
     conn = sqlite3.connect(input_file)
