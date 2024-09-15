@@ -1,6 +1,7 @@
 import os.path
 import sqlite3
 import tkinter as tk
+from pkgutil import get_data
 from tkinter import filedialog
 
 import numpy as np  # for np.nan
@@ -39,6 +40,39 @@ def write_excel(df, worksheet_name):
 
     print(f'Query results for worksheet {green}{worksheet_name}{white} saved to Excel file.')
 
+def process_search_terms():
+    worksheet = 'Search Terms'
+    # Get the history data frame
+    input_file = f'{profile_path}/History'
+    df_history, ws_history = get_dataframes(input_file, historyquery)
+
+    # Get the keywords data frame
+    input_file = f'{profile_path}/Web Data'
+    df_keywords, ws_keyword = get_dataframes(input_file, keywordsquery)
+
+    searchTerms = []  # list to hold search terms
+    for row in df_history.itertuples():  # iterate through the history dataframe to get search terms
+        if not np.isnan(row[3]):  # if there is a keyword_id, append the search term to the list
+            searchTerms.append([row[1],
+                               row[2],
+                               df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
+                               row[5],
+                               row[6],
+                               row[7],
+                               row[8]])
+
+    # add to a new dataframe
+    df_searchterms = pd.DataFrame(searchTerms)
+
+    df_searchterms.columns = ['id',
+                              'url',
+                              'keyword',
+                              'search term',
+                              'typed_count',
+                              'last_visit_time (UTC)',
+                              'Decoded last_visit_time (UTC)']
+
+    return df_searchterms, worksheet
 
 if __name__ == '__main__':
 
@@ -54,78 +88,23 @@ if __name__ == '__main__':
                                               initialdir=profile_path, filetypes=[("Excel Files", "*.xlsx")],
                                               defaultextension="*.xlsx", confirmoverwrite=True)
 
-    input_file = f'{profile_path}/History'
-    # ***Query History***
-    df, worksheet = get_dataframes(input_file, history)
-    write_excel(df, worksheet)
+    db_files = {
+        'History': [f'{profile_path}/History', history],
+        "History Gaps": [f'{profile_path}/History', history_gaps],
+        "Downloads": [f'{profile_path}/History', downloads],
+        "Downloads Gaps": [f'{profile_path}/History', downloads_gaps],
+        "Autofill": [f'{profile_path}/Web Data', autofill],
+        "Login Data": [f'{profile_path}/Login Data', login_data],
+        "Login Data Gaps": [f'{profile_path}/Login Data', login_data_gaps],
+        "Shortcuts": [f'{profile_path}/Shortcuts', shortcuts]
+    }
 
-    # ***Query History Gaps***
-    df, worksheet = get_dataframes(input_file, history_gaps)
-    write_excel(df, worksheet)
-
-    # ***Query Downloads***
-    df, worksheet = get_dataframes(input_file, downloads)
-    write_excel(df, worksheet)
-
-    # ***Query Downloads Gaps***
-    df, worksheet = get_dataframes(input_file, downloads_gaps)
-    write_excel(df, worksheet)
-
-    # ***Query autofill***
-    input_file = f'{profile_path}/Web Data'
-    df, worksheet = get_dataframes(input_file, autofill)
-    write_excel(df, worksheet)
-
-    # ***Query autofill_profile***
-    # only works with older versions of Chrome. Commented out for now.
-    # query_db(input_file, autofill_profile)
-
-    # ***Query Login Data***
-    input_file = f'{profile_path}/Login Data'
-    df, worksheet = get_dataframes(input_file, login_data)
-    write_excel(df, worksheet)
-
-    # ***Query Login Data Gaps***
-    df, worksheet = get_dataframes(input_file, login_data_gaps)
-    write_excel(df, worksheet)
-
-    # ***Query Shortcuts***
-    input_file = f'{profile_path}/Shortcuts'
-    df, worksheet = get_dataframes(input_file, shortcuts)
-    write_excel(df, worksheet)
+    for db_query in db_files.keys():  # iterate through the dictionary of queries
+        df, worksheet = get_dataframes(db_files[db_query][0], db_files[db_query][1])
+        write_excel(df, worksheet)
 
     # ***Query Search Terms***
-    worksheet = 'Search Terms'
-
-    input_file = f'{profile_path}/History'
-    df_history, ws_history = get_dataframes(input_file, historyquery)
-
-    input_file = f'{profile_path}/Web Data'
-    df_keywords, ws_keyword = get_dataframes(input_file, keywordsquery)
-
-    searchTerms = []
-
-    for row in df_history.itertuples():
-        if not np.isnan(row[3]):
-            searchTerms.append([row[1],
-                               row[2],
-                               df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
-                               row[5],
-                               row[6],
-                               row[7],
-                               row[8]])
-
-    # add to a new dataframe
-    df_searchterms = pd.DataFrame(searchTerms)
-    df_searchterms.columns = ['id',
-                              'url',
-                              'keyword',
-                              'search term',
-                              'typed_count',
-                              'last_visit_time (UTC)',
-                              'Decoded last_visit_time (UTC)']
-
+    df_searchterms, worksheet = process_search_terms()
     write_excel(df_searchterms, worksheet)
-
 
     print(f'\nAll queries completed. {green}Excel file saved to {excel_path}{white}')
