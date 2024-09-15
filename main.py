@@ -5,13 +5,12 @@
 # Script to extract data from Google Chrome's SQLite databases
 # Outputs to an Excel file.
 
+import numpy as np  # for np.nan
 import os.path
+import pandas as pd
 import sqlite3
 import tkinter as tk
 from tkinter import filedialog
-
-import numpy as np  # for np.nan
-import pandas as pd
 
 from autofill import chrome_autofill
 from downloads import chrome_downloads, chrome_downloads_gaps
