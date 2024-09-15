@@ -1,3 +1,6 @@
+from multiprocessing.pool import worker
+
+
 def history():
 
     worksheet = 'history'
@@ -194,7 +197,7 @@ def history():
     return sql_query, worksheet
 
 def history_gaps():
-
+    worksheet = 'history_gaps'
     sql_query = """
         /*
         Written by Jacques Boucher
@@ -266,4 +269,4 @@ def history_gaps():
 
     """
 
-    return sql_query, "history_gaps"
+    return sql_query, worksheet

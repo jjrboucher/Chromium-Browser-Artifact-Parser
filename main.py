@@ -1,11 +1,40 @@
+import os.path
+import pandas as pd
+import sqlite3
+import tkinter as tk
+from tkinter import filedialog
+from history import history, history_gaps
+from downloads import downloads, downloads_gaps
+from autofill import autofill, autofill_profile
+from logindata import login_data, login_data_gaps
+from shortcuts import shortcuts
+
+def query_db(db_file, function):
+    global excel_path
+    query, worksheet_name = function()
+
+    conn = sqlite3.connect(db_file)
+
+    # Execute the query and fetch the results into a pandas DataFrame
+    df = pd.read_sql_query(query, conn)
+
+    # Close the database connection
+    conn.close()
+
+    if os.path.isfile(excel_path): # if the Excel file already exists
+        # Append to existing Excel file
+        with pd.ExcelWriter(excel_path, mode='a') as writer:
+            df.to_excel(writer, sheet_name=worksheet_name, index=False)
+    else:
+        # Create a new Excel file
+        with pd.ExcelWriter(excel_path, mode='w') as writer:
+            df.to_excel(writer, sheet_name=worksheet_name, index=False)
+
+    print(f"Query results for {worksheet_name} saved to {excel_path}")
+
+
 if __name__ == '__main__':
-    import sqlite3
-    import pandas as pd
-    import tkinter as tk
-    from tkinter import filedialog
-    from history import history, history_gaps
-    from downloads import downloads
-    from autofill import autofill
+
 
     # Get the path of the browser profile folder
     root = tk.Tk()
@@ -18,71 +47,34 @@ if __name__ == '__main__':
                                               initialdir=profile_path, filetypes=[("Excel Files", "*.xlsx")],
                                               defaultextension="*.xlsx", confirmoverwrite=True)
 
-    # ***Query History***
     input_file = f'{profile_path}/History'
-    query, worksheet_name = history()
-
-    conn = sqlite3.connect(input_file)
-
-    # Execute the query and fetch the results into a pandas DataFrame
-
-    df_history = pd.read_sql_query(query, conn)
-
-    # Close the database connection
-    conn.close()
-
-    df_history.to_excel(excel_path, sheet_name=worksheet_name, index=False)
-
-    print(f"Query results for {worksheet_name} saved to {excel_path}")
+    # ***Query History***
+    query_db(input_file, history)
 
     # ***Query History Gaps***
-    query, worksheet_name = history_gaps()
-
-    conn = sqlite3.connect(input_file)
-
-    # Execute the query and fetch the results into a pandas DataFrame
-
-    df_history_gaps = pd.read_sql_query(query, conn)
-
-    # Close the database connection
-    conn.close()
-
-    with pd.ExcelWriter(excel_path, mode='a') as writer:
-        df_history_gaps.to_excel(writer, sheet_name=worksheet_name, index=False)
-
-    print(f"Query results for {worksheet_name} saved to {excel_path}")
+    query_db(input_file, history_gaps)
 
     # ***Query Downloads***
-    query, worksheet_name = downloads()
+    query_db(input_file, downloads)
 
-    conn = sqlite3.connect(input_file)
-
-    # Execute the query and fetch the results into a pandas DataFrame
-
-    df_downloads = pd.read_sql_query(query, conn)
-
-    # Close the database connection
-    conn.close()
-
-    with pd.ExcelWriter(excel_path, mode='a') as writer:
-        df_downloads.to_excel(writer, sheet_name=worksheet_name, index=False)
-
-    print(f"Query results for {worksheet_name} saved to {excel_path}")
+    # ***Query Downloads Gaps***
+    query_db(input_file, downloads_gaps)
 
     # ***Query autofill***
     input_file = f'{profile_path}/Web Data'
-    query, worksheet_name = autofill()
+    query_db(input_file, autofill)
 
-    conn = sqlite3.connect(input_file)
+    # ***Query autofill_profile***
+    # only works with older versions of Chrome. Commented out for now.
+    # query_db(input_file, autofill_profile)
 
-    # Execute the query and fetch the results into a pandas DataFrame
+    # ***Query Login Data***
+    input_file = f'{profile_path}/Login Data'
+    query_db(input_file, login_data)
 
-    df_autofill = pd.read_sql_query(query, conn)
+    # ***Query Login Data Gaps***
+    query_db(input_file, login_data_gaps)
 
-    # Close the database connection
-    conn.close()
-
-    with pd.ExcelWriter(excel_path, mode='a') as writer:
-        df_autofill.to_excel(writer, sheet_name=worksheet_name, index=False)
-
-    print(f"Query results for {worksheet_name} saved to {excel_path}")
+    # ***Query Shortcuts***
+    input_file = f'{profile_path}/Shortcuts'
+    query_db(input_file, shortcuts)
