@@ -9,6 +9,10 @@ from autofill import autofill, autofill_profile
 from logindata import login_data, login_data_gaps
 from shortcuts import shortcuts
 
+red = f'\033[91m'
+white = f'\033[00m'
+green = f'\033[92m'
+
 def query_db(db_file, function):
     global excel_path
     query, worksheet_name = function()
@@ -30,7 +34,7 @@ def query_db(db_file, function):
         with pd.ExcelWriter(excel_path, mode='w') as writer:
             df.to_excel(writer, sheet_name=worksheet_name, index=False)
 
-    print(f"Query results for {worksheet_name} saved to {excel_path}")
+    print(f'Query results for worksheet {green}{worksheet_name}{white} saved to Excel file {green}{excel_path}{white}')
 
 
 if __name__ == '__main__':
