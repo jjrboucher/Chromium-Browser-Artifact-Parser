@@ -25,6 +25,12 @@ white = f'\033[00m'
 green = f'\033[92m'
 
 def get_dataframes(db_file, function):
+    """
+    Get the dataframes from the SQLite database
+    :param db_file: path and filename of the SQLite database file to query
+    :param function: name of the function to run
+    :return: returns the dataframe with the query results, and the worksheet name
+    """
     query, worksheet_name = function()
 
     conn = sqlite3.connect(db_file)
@@ -33,6 +39,13 @@ def get_dataframes(db_file, function):
     return dataframe, worksheet_name
 
 def write_excel(dataframe, worksheet_name):
+    """
+    Write the dataframe to an Excel file
+    :param dataframe:
+    :param worksheet_name:
+    :return: nil
+    """
+
     global excel_path
 
     if os.path.isfile(excel_path): # if the Excel file already exists
@@ -47,6 +60,14 @@ def write_excel(dataframe, worksheet_name):
     print(f'Query results for worksheet {green}{worksheet_name}{white} saved to Excel file.')
 
 def process_search_terms():
+    """
+    Process the search terms
+    Because the search terms are stored in two different tables, we need to join them.
+    The only way to accomplish this is to query each table and store the results in a dataframe.
+    Then merge the dataframes on the keyword_id, but only if keyword_id is not NaN.
+    :return: dataframe with the search terms, and the worksheet name
+    """
+
     worksheet = 'Search Terms'
     # Get the history data frame
     input_file = f'{profile_path}/History'
