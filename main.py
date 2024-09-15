@@ -94,6 +94,8 @@ if __name__ == '__main__':
                                               initialdir=profile_path, filetypes=[("Excel Files", "*.xlsx")],
                                               defaultextension="*.xlsx", confirmoverwrite=True)
 
+    # Dictionary of queries to run. Keys are descriptions of the queries,
+    # values are lists with the path to the SQLite file and the function to run.
     chrome_queries = {
         'History': [f'{profile_path}/History', chrome_history],
         "History Gaps": [f'{profile_path}/History', chrome_history_gaps],
