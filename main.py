@@ -12,6 +12,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import filedialog
 
+# Import the queries from the other Python files to process Google Chrome artifacts
 from autofill import chrome_autofill
 from downloads import chrome_downloads, chrome_downloads_gaps
 from history import chrome_history, chrome_history_gaps
