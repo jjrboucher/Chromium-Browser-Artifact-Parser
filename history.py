@@ -1,6 +1,3 @@
-from multiprocessing.pool import worker
-
-
 def history():
 
     worksheet = 'history'
