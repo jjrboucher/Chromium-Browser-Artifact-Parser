@@ -1,4 +1,4 @@
-def autofill():
+def chrome_autofill():
     worksheet = "Autofill"
     sql_query = """
         /*

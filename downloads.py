@@ -1,4 +1,4 @@
-def downloads():
+def chrome_downloads():
     worksheet = 'downloads'
     sql_query = """
         /*
@@ -99,7 +99,7 @@ def downloads():
 
     return sql_query, worksheet
 
-def downloads_gaps():
+def chrome_downloads_gaps():
     worksheet = 'downloads_gaps'
     sql_query = """
         /*

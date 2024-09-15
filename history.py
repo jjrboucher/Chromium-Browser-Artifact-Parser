@@ -1,4 +1,4 @@
-def history():
+def chrome_history():
 
     worksheet = 'history'
     sql_query = """
@@ -193,7 +193,7 @@ def history():
 
     return sql_query, worksheet
 
-def history_gaps():
+def chrome_history_gaps():
     worksheet = 'history_gaps'
     sql_query = """
         /*

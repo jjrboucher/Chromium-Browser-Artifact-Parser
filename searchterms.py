@@ -1,4 +1,4 @@
-def historyquery():
+def chrome_historyquery():
     history_query = """
         SELECT	urls.id,
                 urls.url,
@@ -15,7 +15,7 @@ def historyquery():
 
     return history_query, ""
 
-def keywordsquery():
+def chrome_keywordsquery():
     keywords_query = """
         SELECT 	keywords.id,
                 keywords.keyword              

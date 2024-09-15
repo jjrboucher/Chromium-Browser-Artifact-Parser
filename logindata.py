@@ -1,4 +1,4 @@
-def login_data():
+def chrome_login_data():
     worksheet = "Login Data"
     sql_query = """
         /*
@@ -84,7 +84,7 @@ def login_data():
 
     return sql_query, worksheet
 
-def login_data_gaps():
+def chrome_login_data_gaps():
     worksheet = "Login Data Gaps"
     sql_query = """
         /*

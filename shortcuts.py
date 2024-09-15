@@ -1,4 +1,4 @@
-def shortcuts():
+def chrome_shortcuts():
     worksheet = "shortcuts"
     sql_query = """
         /*
