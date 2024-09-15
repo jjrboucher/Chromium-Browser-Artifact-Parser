@@ -88,7 +88,7 @@ if __name__ == '__main__':
                                               initialdir=profile_path, filetypes=[("Excel Files", "*.xlsx")],
                                               defaultextension="*.xlsx", confirmoverwrite=True)
 
-    db_files = {
+    db_queries = {
         'History': [f'{profile_path}/History', history],
         "History Gaps": [f'{profile_path}/History', history_gaps],
         "Downloads": [f'{profile_path}/History', downloads],
@@ -99,8 +99,8 @@ if __name__ == '__main__':
         "Shortcuts": [f'{profile_path}/Shortcuts', shortcuts]
     }
 
-    for db_query in db_files.keys():  # iterate through the dictionary of queries
-        df, worksheet = get_dataframes(db_files[db_query][0], db_files[db_query][1])
+    for db_query in db_queries.keys():  # iterate through the dictionary of queries
+        df, worksheet = get_dataframes(db_queries[db_query][0], db_queries[db_query][1])
         write_excel(df, worksheet)
 
     # ***Query Search Terms***
