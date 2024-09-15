@@ -1,3 +1,10 @@
+# Written by Jacques Boucher
+# email: jjrboucher@gmail.com
+# version date: 2024-09-15
+#
+# Script to extract data from Google Chrome's SQLite databases
+# Outputs to an Excel file.
+
 import os.path
 import sqlite3
 import tkinter as tk
