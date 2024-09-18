@@ -5,6 +5,10 @@
 # Script to extract data from Google Chrome's SQLite databases
 # Outputs to an Excel file.
 
+#### ERROR CHECKING TO ADD ####
+# DB locked
+#
+
 import numpy as np  # for np.nan
 import os.path
 import pandas as pd
@@ -81,15 +85,18 @@ def process_search_terms():
     df_keywords, ws_keyword = get_dataframes(input_file, chrome_keywordsquery)
 
     searchterms = []  # list to hold search terms
-    for row in df_history.itertuples():  # iterate through the history dataframe to get search terms
-        if not np.isnan(row[3]):  # if there is a keyword_id, append the search term to the list
-            searchterms.append([row[1],
-                                row[2],
-                                df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
-                                row[5],
-                                row[6],
-                                row[7],
-                                row[8]])
+    if len(df_keywords) > 0:  # if there are keywords, proceed
+        for row in df_history.itertuples():  # iterate through the history dataframe to get search terms
+            if not np.isnan(row[3]):  # if there is a keyword_id, append the search term to the list
+                searchterms.append([row[1],
+                                    row[2],
+                                    df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
+                                    row[5],
+                                    row[6],
+                                    row[7],
+                                    row[8]])
+    else:
+        searchterms = [["", "", "", "", "", "", ""]]  # if no keywords, adds an empty list instead.
 
     # add to a new dataframe
     df_searchterms = pd.DataFrame(searchterms)
