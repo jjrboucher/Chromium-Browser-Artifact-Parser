@@ -17,12 +17,12 @@ import tkinter as tk
 from tkinter import filedialog
 
 # Import the queries from the other Python files to process Google Chrome artifacts
-from autofill import chrome_autofill
-from downloads import chrome_downloads, chrome_downloads_gaps
-from history import chrome_history, chrome_history_gaps
-from logindata import chrome_login_data, chrome_login_data_gaps
-from searchterms import chrome_historyquery, chrome_keywordsquery
-from shortcuts import chrome_shortcuts
+from SQLite.autofill import chrome_autofill
+from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
+from SQLite.history import chrome_history, chrome_history_gaps
+from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
+from SQLite.searchterms import chrome_historyquery, chrome_keywordsquery
+from SQLite.shortcuts import chrome_shortcuts
 
 red = f'\033[91m'
 white = f'\033[00m'
