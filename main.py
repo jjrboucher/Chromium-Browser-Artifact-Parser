@@ -24,6 +24,7 @@ red = f'\033[91m'
 white = f'\033[00m'
 green = f'\033[92m'
 
+
 def get_dataframes(db_file, function):
     """
     Get the dataframes from the SQLite database
@@ -38,6 +39,7 @@ def get_dataframes(db_file, function):
     conn.close()
     return dataframe, worksheet_name
 
+
 def write_excel(dataframe, worksheet_name):
     """
     Write the dataframe to an Excel file
@@ -48,7 +50,7 @@ def write_excel(dataframe, worksheet_name):
 
     global excel_path
 
-    if os.path.isfile(excel_path): # if the Excel file already exists
+    if os.path.isfile(excel_path):  # if the Excel file already exists
         # Append to existing Excel file
         with pd.ExcelWriter(excel_path, mode='a') as writer:
             dataframe.to_excel(writer, sheet_name=worksheet_name, index=False)
@@ -58,6 +60,7 @@ def write_excel(dataframe, worksheet_name):
             dataframe.to_excel(writer, sheet_name=worksheet_name, index=False)
 
     print(f'Query results for worksheet {green}{worksheet_name}{white} saved to Excel file.')
+
 
 def process_search_terms():
     """
@@ -81,12 +84,12 @@ def process_search_terms():
     for row in df_history.itertuples():  # iterate through the history dataframe to get search terms
         if not np.isnan(row[3]):  # if there is a keyword_id, append the search term to the list
             searchterms.append([row[1],
-                               row[2],
-                               df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
-                               row[5],
-                               row[6],
-                               row[7],
-                               row[8]])
+                                row[2],
+                                df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
+                                row[5],
+                                row[6],
+                                row[7],
+                                row[8]])
 
     # add to a new dataframe
     df_searchterms = pd.DataFrame(searchterms)
@@ -101,8 +104,8 @@ def process_search_terms():
 
     return df_searchterms, worksheet
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
 
     # Get the path of the browser profile folder
     root = tk.Tk()
