@@ -5,8 +5,9 @@
 # Script to extract data from Google Chrome's SQLite databases
 # Outputs to an Excel file.
 
-#### ERROR CHECKING TO ADD ####
+# ***ERROR CHECKING TO ADD***
 # DB locked
+# User hits cancel rather than selecting a folder, or output Excel file.
 
 
 import numpy as np  # for np.nan
