@@ -1,5 +1,5 @@
 def chrome_downloads():
-    worksheet = 'downloads'
+    worksheet = 'Downloads'
     sql_query = """
         /*
         Last updated: 2021-10-10
@@ -100,7 +100,7 @@ def chrome_downloads():
     return sql_query, worksheet
 
 def chrome_downloads_gaps():
-    worksheet = 'downloads_gaps'
+    worksheet = 'Downloads Gaps'
     sql_query = """
         /*
         Written by Jacques Boucher

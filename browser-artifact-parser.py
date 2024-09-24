@@ -1,6 +1,6 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2024-09-18
+# version date: 2024-09-24
 #
 # Script to extract data from Google Chrome's SQLite databases
 # Outputs to an Excel file.
@@ -18,12 +18,13 @@ import tkinter as tk
 from tkinter import filedialog
 
 # Import the queries from the other Python files to process Google Chrome artifacts
-from SQLite.autofill import chrome_autofill
+from SQLite.cookies import chrome_cookies
 from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
 from SQLite.history import chrome_history, chrome_history_gaps
 from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
 from SQLite.searchterms import chrome_historyquery, chrome_keywordsquery
 from SQLite.shortcuts import chrome_shortcuts
+from SQLite.WebData import chrome_autofill, chrome_keywords, chrome_masked_credit_cards, chrome_masked_bank_accounts
 
 red = f'\033[91m'
 white = f'\033[00m'
@@ -134,9 +135,13 @@ if __name__ == '__main__':
         "Downloads": [f'{profile_path}/History', chrome_downloads],
         "Downloads Gaps": [f'{profile_path}/History', chrome_downloads_gaps],
         "Autofill": [f'{profile_path}/Web Data', chrome_autofill],
+        "Keywords": [f'{profile_path}/Web Data', chrome_keywords],
+        "Credit Cards": [f'{profile_path}/Web Data', chrome_masked_credit_cards],
+        "Bank Accounts": [f'{profile_path}/Web Data', chrome_masked_bank_accounts],
         "Login Data": [f'{profile_path}/Login Data', chrome_login_data],
         "Login Data Gaps": [f'{profile_path}/Login Data', chrome_login_data_gaps],
-        "Shortcuts": [f'{profile_path}/Shortcuts', chrome_shortcuts]
+        "Shortcuts": [f'{profile_path}/Shortcuts', chrome_shortcuts],
+        "Cookies": [f'{profile_path}/Network/Cookies', chrome_cookies]
     }
 
     for sqlite_query in chrome_queries.keys():  # iterate through the dictionary of queries
