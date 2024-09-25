@@ -1,13 +1,15 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2024-09-24
+# version date: 2024-09-25
 #
-# Script to extract data from Google Chrome's SQLite databases
+# Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file.
+#
+# tested with Chrome 129, Edge 129, Opera 113
 
 # ***ERROR CHECKING TO ADD***
 # DB locked
-# User hits cancel rather than selecting a folder, or output Excel file.
+# User hits cancel rather than selecting a folder, or output Excel file already exists.
 
 
 import numpy as np  # for np.nan
