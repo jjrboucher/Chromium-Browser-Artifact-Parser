@@ -5,6 +5,15 @@
 # Script to extract data from Google Chrome's SQLite databases
 # Outputs to an Excel file.
 
+# Other parsing to add:
+# Bookmarks
+# Cookies (under {profile}/Network/Cookies)
+# Extensions
+# Favicons
+# Local Storage - LevelDB files. (under {profile}/Local Storage)
+# Top Sites
+# Web Data (other tables)
+
 # ***ERROR CHECKING TO ADD***
 # DB locked
 # User hits cancel rather than selecting a folder, or output Excel file.
