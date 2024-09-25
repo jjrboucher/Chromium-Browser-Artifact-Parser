@@ -20,6 +20,7 @@ from tkinter import filedialog
 # Import the queries from the other Python files to process Google Chrome artifacts
 from SQLite.cookies import chrome_cookies
 from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
+from SQLite.favicons import chrome_favicons
 from SQLite.history import chrome_history, chrome_history_gaps
 from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
 from SQLite.searchterms import chrome_historyquery, chrome_keywordsquery
@@ -141,7 +142,8 @@ if __name__ == '__main__':
         "Login Data": [f'{profile_path}/Login Data', chrome_login_data],
         "Login Data Gaps": [f'{profile_path}/Login Data', chrome_login_data_gaps],
         "Shortcuts": [f'{profile_path}/Shortcuts', chrome_shortcuts],
-        "Cookies": [f'{profile_path}/Network/Cookies', chrome_cookies]
+        "Cookies": [f'{profile_path}/Network/Cookies', chrome_cookies],
+        "FavIcons": [f'{profile_path}/Favicons', chrome_favicons]
     }
 
     for sqlite_query in chrome_queries.keys():  # iterate through the dictionary of queries

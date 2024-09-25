@@ -120,6 +120,8 @@ def chrome_masked_bank_accounts():
     """
 
     return sql_query, worksheet
+
+
 def autofill_profile():
     # This query does not work with later versions of the browser as the autofill_profile table has been removed.
     worksheet = "Autofill Profile"
