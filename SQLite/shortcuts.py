@@ -1,5 +1,5 @@
 def chrome_shortcuts():
-    worksheet = "shortcuts"
+    worksheet = "Shortcuts"
     sql_query = """
         /*
         Last updated 2019-01-20

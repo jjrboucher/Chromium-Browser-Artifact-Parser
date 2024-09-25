@@ -1,6 +1,6 @@
 def chrome_history():
 
-    worksheet = 'history'
+    worksheet = 'History'
     sql_query = """
         /*
         Last updated 2021-12-17
@@ -194,7 +194,7 @@ def chrome_history():
     return sql_query, worksheet
 
 def chrome_history_gaps():
-    worksheet = 'history_gaps'
+    worksheet = 'History Gaps'
     sql_query = """
         /*
         Written by Jacques Boucher
