@@ -50,11 +50,23 @@ def chrome_keywords():
                 keyword,
                 url,
                 date_created,
-                datetime(date_created/1000000-11644473600,'unixepoch') AS 'Decoded date_created (UTC)',
+                CASE date_created
+                    WHEN 0 THEN ""
+                    ELSE datetime(date_created/1000000-11644473600,'unixepoch') 
+                END AS 'Decoded date_created (UTC)',
+                
                 last_modified,
-                datetime(last_modified/1000000-11644473600,'unixepoch') AS 'Decoded last_modified (UTC)',
+                CASE last_modified
+                    WHEN 0 THEN ""
+                    ELSE datetime(last_modified/1000000-11644473600,'unixepoch') 
+                END AS 'Decoded last_modified (UTC)',
+                
                 last_visited,
-                datetime(last_visited/1000000-11644473600,'unixepoch') AS 'Decoded last_visited (UTC)',
+                CASE last_visited
+                    WHEN 0 THEN ""
+                    ELSE datetime(last_visited/1000000-11644473600,'unixepoch')
+                END AS 'Decoded last_visited (UTC)',
+                
                 usage_count
         
         FROM keywords
