@@ -46,7 +46,7 @@ def chrome_keywords():
         
         Last modified: 2024-10-19
         Author:  Jacques Boucher - jjrboucher@gmail.com
-        Tested with:  Chrome 129
+        Tested with:  Chrome 129.0
         */
         
         SELECT	id,
