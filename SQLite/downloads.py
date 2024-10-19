@@ -45,7 +45,7 @@ def chrome_downloads():
                 CASE state 
                    WHEN 1 THEN "Complete" 
                    WHEN 2 THEN "Interrupted"
-                   ELSE state
+                   ELSE "New value!: "||state||" Check source code for meaning!"
                 END AS "Decoded state",
                 interrupt_reason,
                 /* 
