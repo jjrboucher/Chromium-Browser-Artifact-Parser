@@ -1,6 +1,6 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2024-09-25
+# version date: 2024-10-02
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file.
@@ -20,6 +20,15 @@
 # DB locked
 # User hits cancel rather than selecting a folder, or output Excel file already exists.
 
+# ***TO DO***
+# parse bookmarks
+# parse extensions
+# parse preferences
+# parse top sites
+# parse Leveldb files
+# Create a summary worksheet with counts of each type of artifact extracted, as well as examiner notes,
+# and path and hashes of the SQLite files processed.
+
 
 import numpy as np  # for np.nan
 import os.path
@@ -34,7 +43,7 @@ from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
 from SQLite.favicons import chrome_favicons
 from SQLite.history import chrome_history, chrome_history_gaps
 from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
-from SQLite.searchterms import chrome_historyquery, chrome_keywordsquery
+from SQLite.searchterms import chrome_keyword_historyquery
 from SQLite.shortcuts import chrome_shortcuts
 from SQLite.WebData import chrome_autofill, chrome_keywords, chrome_masked_credit_cards, chrome_masked_bank_accounts
 
@@ -92,34 +101,56 @@ def process_search_terms():
     worksheet = 'Search Terms'
     # Get the history data frame
     input_file = f'{profile_path}/History'
-    df_history, ws_history = get_dataframes(input_file, chrome_historyquery)
+    df_history, ws_history = get_dataframes(input_file, chrome_keyword_historyquery)
 
     # Get the keywords data frame
     input_file = f'{profile_path}/Web Data'
-    df_keywords, ws_keyword = get_dataframes(input_file, chrome_keywordsquery)
+    df_keywords, ws_keyword = get_dataframes(input_file, chrome_keywords)
+    # print(f'keywords df: {df_keywords}')
+    # input("enter to continue")
 
     searchterms = []  # list to hold search terms
     if len(df_keywords) > 0:  # if there are keywords, proceed
         for row in df_history.itertuples():  # iterate through the history dataframe to get search terms
             if not np.isnan(row[3]):  # if there is a keyword_id, append the search term to the list
+                try:  # sometimes, the corresponding keyword index does not exist in the keywords table in Web Data
+                    kw = [df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
+                          df_keywords.query(f'id == {row[3]}')['date_created'].values[0],
+                          df_keywords.query(f'id == {row[3]}')['Decoded date_created (UTC)'].values[0],
+                          df_keywords.query(f'id == {row[3]}')['last_modified'].values[0],
+                          df_keywords.query(f'id == {row[3]}')['Decoded last_modified (UTC)'].values[0]
+                          ]
+                except IndexError:
+                    kw = ['', '', '', '', '']
                 searchterms.append([row[1],
                                     row[2],
-                                    df_keywords.query(f'id == {row[3]}')['keyword'].values[0],
+                                    row[3],
+                                    kw[0],
                                     row[5],
                                     row[6],
+                                    kw[1],
+                                    kw[2],
+                                    kw[3],
+                                    kw[4],
                                     row[7],
                                     row[8]])
     else:
+        print('no keywords, so adding an empty row instead')
         searchterms = [["", "", "", "", "", "", ""]]  # if no keywords, adds an empty list instead.
 
     # add to a new dataframe
     df_searchterms = pd.DataFrame(searchterms)
 
-    df_searchterms.columns = ['id',
+    df_searchterms.columns = ['URL id',
                               'url',
+                              'keyword id',
                               'keyword',
                               'search term',
                               'typed_count',
+                              'date_created',
+                              'Decoded date_created (UTC)',
+                              'last_modified',
+                              'Decoded last_modified (UTC)',
                               'last_visit_time (UTC)',
                               'Decoded last_visit_time (UTC)']
 
