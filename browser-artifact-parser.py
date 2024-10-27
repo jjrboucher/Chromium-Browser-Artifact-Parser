@@ -1,6 +1,6 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2024-10-02
+# version date: 2024-10-27
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file.
@@ -8,7 +8,7 @@
 # tested with Chrome 129, Edge 129, Opera 113
 
 # Other parsing to add:
-# Bookmarks
+# Bookmarks - completed 27 Oct 2024
 # Cookies (under {profile}/Network/Cookies)
 # Extensions
 # Favicons
@@ -38,6 +38,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 # Import the queries from the other Python files to process Google Chrome artifacts
+from JSON.bookmarks import get_chromium_bookmarks
 from SQLite.cookies import chrome_cookies
 from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
 from SQLite.favicons import chrome_favicons
@@ -195,5 +196,15 @@ if __name__ == '__main__':
     # ***Query Search Terms***
     dataframe_searchterms, ws = process_search_terms()
     write_excel(dataframe_searchterms, ws)
+
+    # *** Bookmarks ***
+    dataframe_bookmarks, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks')
+    write_excel(dataframe_bookmarks, ws)
+
+    # *** Bookmarks_backup ***
+    dataframe_bookmarks_backup, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks.bak')
+    write_excel(dataframe_bookmarks_backup, ws)
+
+    # *** use the compare feature in pandas to report what is different between bookmarks and backups.
 
     print(f'\nAll queries completed. {green}Excel file saved to {excel_path}{white}')
