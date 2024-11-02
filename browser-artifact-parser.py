@@ -1,6 +1,6 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2024-10-27
+# version date: 2024-11-02
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file.
@@ -21,7 +21,7 @@
 # User hits cancel rather than selecting a folder, or output Excel file already exists.
 
 # ***TO DO***
-# parse bookmarks
+# parse bookmarks - Completed 2 Nov 2024
 # parse extensions
 # parse preferences
 # parse top sites
@@ -199,11 +199,12 @@ if __name__ == '__main__':
 
     # *** Bookmarks ***
     dataframe_bookmarks, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks')
-    write_excel(dataframe_bookmarks, ws)
-
     # *** Bookmarks_backup ***
-    dataframe_bookmarks_backup, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks.bak')
-    write_excel(dataframe_bookmarks_backup, ws)
+    dataframe_bookmarks_backup, ws_bak = get_chromium_bookmarks(f'{profile_path}/Bookmarks.bak')
+    # append bookmarks_backup df to bookmarks df
+    dataframe_bookmarks_all = dataframe_bookmarks._append(dataframe_bookmarks_backup, ignore_index=True)
+    # write all to "Bookmarks" worksheet
+    write_excel(dataframe_bookmarks_all, ws)
 
     # *** use the compare feature in pandas to report what is different between bookmarks and backups.
 

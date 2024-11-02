@@ -14,7 +14,7 @@ def convert_webkit_timestamp(webkit_timestamp):
 def get_chromium_bookmarks(bookmark_path):
     rows = []
     if "Bookmarks.bak" in bookmark_path:
-        worksheet = "Bookmark Backups"
+        worksheet = "Bookmarks.bak"
     else:
         worksheet = "Bookmarks"
 
@@ -27,22 +27,37 @@ def get_chromium_bookmarks(bookmark_path):
         items = folder.get("children", [])
         for item in items:
             if item.get("type") == "folder":
-                rows.append(['folder',
-                             fpath,
-                             int(item.get('id')),
-                             item.get('name'),
-                             item.get('date_added'),
-                             ""
-                    ])
-
-                parse_bookmark_folder(item, fpath + "/" + item.get('name'),  level + 1)
-            elif item.get("type") == "url":
-                rows.append(['url',
+                date_last_used = convert_webkit_timestamp(int(item.get('date_last_used'))) \
+                    if int(item.get('date_last_used')) > 0 else ""
+                rows.append([worksheet,
+                             'folder',
                              fpath,
                              int(item.get('id')),
                              item.get('name'),
                              item.get('date_added'),
                              convert_webkit_timestamp(int(item.get('date_added'))),
+                             item.get('date_last_used'),
+                             date_last_used,
+                             item.get('date_modified'),
+                             convert_webkit_timestamp(int(item.get('date_modified'))),
+                             ''
+                    ])
+
+                parse_bookmark_folder(item, fpath + "/" + item.get('name'),  level + 1)
+            elif item.get("type") == "url":
+                date_last_used = convert_webkit_timestamp(int(item.get('date_last_used'))) \
+                    if int(item.get('date_last_used')) > 0 else ""
+                rows.append([worksheet,
+                             'url',
+                             fpath,
+                             int(item.get('id')),
+                             item.get('name'),
+                             item.get('date_added'),
+                             convert_webkit_timestamp(int(item.get('date_added'))),
+                             item.get('date_last_used'),
+                             date_last_used,
+                             '',
+                             '',
                              item.get('url')
                     ])
 
@@ -53,6 +68,8 @@ def get_chromium_bookmarks(bookmark_path):
         parse_bookmark_folder(root_folder, root_key, 0)
 
     bookmarks = pd.DataFrame(rows)
-    bookmarks.columns = ['Type', 'Folder Path', 'ID', 'Name', 'Date added', 'Converted Date added (UTC)', 'URL']
+    bookmarks.columns = ['Source','Type', 'Folder Path', 'ID', 'Name', 'Date added', 'Converted Date added (UTC)',
+                         'Date last used', 'Converted Date last used (UTC)', 'Date Modified (folders only)',
+                         'Converted Date Modified (UTC)','URL']
     bookmarks.sort_values(['Folder Path','Type'], ascending=[True, True], inplace=True)
     return bookmarks, worksheet
