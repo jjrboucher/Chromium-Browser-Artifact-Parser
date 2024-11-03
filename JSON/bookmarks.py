@@ -1,6 +1,9 @@
 import json
 import pandas as pd
+import tkinter as tk
+from tkinter import filedialog
 from datetime import datetime, timedelta
+from Functions.write_to_excel import write_excel
 
 def convert_webkit_timestamp(webkit_timestamp):
     # WebKit timestamp is in microseconds since January 1, 1601
@@ -73,3 +76,30 @@ def get_chromium_bookmarks(bookmark_path):
                          'Converted Date Modified (UTC)','URL']
     bookmarks.sort_values(['Folder Path','Type'], ascending=[True, True], inplace=True)
     return bookmarks, worksheet
+
+if __name__ == '__main__':
+    red = f'\033[91m'
+    white = f'\033[00m'
+    green = f'\033[92m'
+
+    # Get the path of the browser profile folder
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+
+    profile_path = filedialog.askdirectory(title="Chrome user profile folder to parse", initialdir=".")
+
+    # Define the path to save the Excel file
+    excel_path = filedialog.asksaveasfilename(title="Select a new XLSX file for output (or overwrite existing)",
+                                              initialdir=profile_path, filetypes=[("Excel Files", "*.xlsx")],
+                                              defaultextension="*.xlsx", confirmoverwrite=True)
+
+    # *** Bookmarks ***
+    bookmarks_df, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks')
+    # *** Bookmarks_backup ***
+    bookmarks_backup_df, ws_bak = get_chromium_bookmarks(f'{profile_path}/Bookmarks.bak')
+    # append bookmarks_backup df to bookmarks df
+    all_bookmarks = pd.concat([bookmarks_df, bookmarks_backup_df], ignore_index=True)
+    # write all to "Bookmarks" worksheet
+    write_excel(all_bookmarks, ws, excel_path)
+
+    print(f'\nAll queries completed. {green}Excel file saved to {excel_path}{white}')

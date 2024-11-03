@@ -31,13 +31,14 @@
 
 
 import numpy as np  # for np.nan
-import os.path
+# import os.path
 import pandas as pd
 import sqlite3
 import tkinter as tk
 from tkinter import filedialog
 
 # Import the queries from the other Python files to process Google Chrome artifacts
+from Functions.write_to_excel import write_excel
 from JSON.bookmarks import get_chromium_bookmarks
 from SQLite.cookies import chrome_cookies
 from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
@@ -66,28 +67,6 @@ def get_dataframes(db_file, function):
     dataframe = pd.read_sql_query(query, conn)
     conn.close()
     return dataframe, worksheet_name
-
-
-def write_excel(dataframe, worksheet_name):
-    """
-    Write the dataframe to an Excel file
-    :param dataframe:
-    :param worksheet_name:
-    :return: nil
-    """
-
-    global excel_path
-
-    if os.path.isfile(excel_path):  # if the Excel file already exists
-        # Append to existing Excel file
-        with pd.ExcelWriter(excel_path, mode='a') as writer:
-            dataframe.to_excel(writer, sheet_name=worksheet_name, index=False)
-    else:
-        # Create a new Excel file
-        with pd.ExcelWriter(excel_path, mode='w') as writer:
-            dataframe.to_excel(writer, sheet_name=worksheet_name, index=False)
-
-    print(f'Query results for worksheet {green}{worksheet_name}{white} saved to Excel file.')
 
 
 def process_search_terms():
@@ -137,7 +116,7 @@ def process_search_terms():
                                     row[8]])
     else:
         print('no keywords, so adding an empty row instead')
-        searchterms = [["", "", "", "", "", "", ""]]  # if no keywords, adds an empty list instead.
+        searchterms = [["", "", "", "", "", "", "", "", "", "", "", "", ""]]  # if no keywords, adds an empty list instead.
 
     # add to a new dataframe
     df_searchterms = pd.DataFrame(searchterms)
@@ -191,20 +170,20 @@ if __name__ == '__main__':
 
     for sqlite_query in chrome_queries.keys():  # iterate through the dictionary of queries
         df, ws = get_dataframes(chrome_queries[sqlite_query][0], chrome_queries[sqlite_query][1])
-        write_excel(df, ws)
+        write_excel(df, ws, excel_path)
 
     # ***Query Search Terms***
     dataframe_searchterms, ws = process_search_terms()
-    write_excel(dataframe_searchterms, ws)
+    write_excel(dataframe_searchterms, ws, excel_path)
 
     # *** Bookmarks ***
-    dataframe_bookmarks, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks')
+    bookmarks_df, ws = get_chromium_bookmarks(f'{profile_path}/Bookmarks')
     # *** Bookmarks_backup ***
-    dataframe_bookmarks_backup, ws_bak = get_chromium_bookmarks(f'{profile_path}/Bookmarks.bak')
+    bookmarks_backup_df, ws_bak = get_chromium_bookmarks(f'{profile_path}/Bookmarks.bak')
     # append bookmarks_backup df to bookmarks df
-    dataframe_bookmarks_all = dataframe_bookmarks._append(dataframe_bookmarks_backup, ignore_index=True)
+    all_bookmarks = pd.concat([bookmarks_df, bookmarks_backup_df], ignore_index=True)
     # write all to "Bookmarks" worksheet
-    write_excel(dataframe_bookmarks_all, ws)
+    write_excel(all_bookmarks, ws, excel_path)
 
     # *** use the compare feature in pandas to report what is different between bookmarks and backups.
 
