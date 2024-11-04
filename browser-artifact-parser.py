@@ -1,6 +1,6 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2024-11-02
+# version date: 2024-11-03
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file.
@@ -8,7 +8,7 @@
 # tested with Chrome 129, Edge 129, Opera 113
 
 # Other parsing to add:
-# Bookmarks - completed 27 Oct 2024
+# Bookmarks - completed 23 Oct 2024 and updated 3 Nov 2024
 # Cookies (under {profile}/Network/Cookies)
 # Extensions
 # Favicons
