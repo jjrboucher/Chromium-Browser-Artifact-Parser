@@ -8,10 +8,7 @@
 # tested with Chrome 129, Edge 129, Opera 113
 
 # Other parsing to add:
-# Bookmarks - completed 23 Oct 2024 and updated 3 Nov 2024
-# Cookies (under {profile}/Network/Cookies)
 # Extensions
-# Favicons
 # Local Storage - LevelDB files. (under {profile}/Local Storage)
 # Top Sites
 # Web Data (other tables)
@@ -21,7 +18,6 @@
 # User hits cancel rather than selecting a folder, or output Excel file already exists.
 
 # ***TO DO***
-# parse bookmarks - Completed 2 Nov 2024
 # parse extensions
 # parse preferences
 # parse top sites
@@ -38,6 +34,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 # Import the queries from the other Python files to process Google Chrome artifacts
+from Classes.Preferences import Preferences
 from Functions.write_to_excel import write_excel
 from JSON.bookmarks import get_chromium_bookmarks
 from SQLite.cookies import chrome_cookies
@@ -186,5 +183,7 @@ if __name__ == '__main__':
     write_excel(all_bookmarks, ws, excel_path)
 
     # *** use the compare feature in pandas to report what is different between bookmarks and backups.
+
+    print(Preferences(f'{profile_path}/Preferences'))
 
     print(f'\nAll queries completed. {green}Excel file saved to {excel_path}{white}')
