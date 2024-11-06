@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import json
 
 class Preferences:
@@ -40,10 +41,29 @@ class Preferences:
         binary_array =c_id_int.to_bytes(binary_number, "big")  # convert to an array - big endian
         return f'{c_id_int} = {binary_array.decode()}'  # return the raw and decoded values
 
+    def profile_created_date(self):
+        creation_time = self.prefs.get("profile").get("creation_time")
+        # WebKit timestamp is in microseconds since January 1, 1601
+        base_date = datetime(1601, 1, 1)
+        # Convert WebKit time (microseconds) to seconds
+        timestamp_in_seconds = int(creation_time) / 1_000_000
+        # Add to base date
+        human_readable_date = base_date + timedelta(seconds=timestamp_in_seconds)
+        return f'{creation_time} = {human_readable_date} UTC'
+
+    def profile_created_version(self):
+        return self.prefs.get("profile").get("created_by_version")
+
+    def download_directory(self):
+        return self.prefs.get("savefile").get("default_directory)")
+
     def __str__(self):
 
-        return (f'Email: {self.email()}\n'
+        return (f'\nEmail: {self.email()}\n'
                 f'Full name: {self.full_name()}\n'
                 f'Given name: {self.given_name()}\n'
                 f'gaia: {self.gaia()}\n'
-                f'Thumbnail URL: {self.thumbnail_url()}')
+                f'Thumbnail URL: {self.thumbnail_url()}\n'
+                f'Profile created: {self.profile_created_date()}\n'
+                f'Profile created using browser version {self.profile_created_version()}\n'
+                f'Default Download Directory: {self.download_directory()}')
