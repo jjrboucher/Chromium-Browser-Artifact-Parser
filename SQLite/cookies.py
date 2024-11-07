@@ -1,3 +1,8 @@
+# See code at https://www.cyberark.com/resources/threat-research-blog/the-current-state-of-browser-cookies
+# to implement decryption of cookie.
+# Another example: https://gist.github.com/DakuTree/428e5b737306937628f2944fbfdc4ffc
+# Other resource: https://www.bleepingcomputer.com/news/security/new-tool-bypasses-google-chromes-new-cookie-encryption-system/
+
 def chrome_cookies():
     worksheet = "Cookies"
     sql_query = """
