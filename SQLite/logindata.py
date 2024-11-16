@@ -22,7 +22,7 @@ def chrome_login_data():
                 WHEN 0 THEN 'Synched. Not used on this device.'
                 ELSE datetime(date_last_used/1000000-11644473600,'unixepoch') 
             END AS 'Decoded date_last_used (UTC)',
-                date_last_used,
+                date_password_modified,
             CASE date_password_modified
                 WHEN 0 THEN 'Never'
                 ELSE datetime(date_password_modified/1000000-11644473600,'unixepoch') 
