@@ -14,21 +14,22 @@ def chrome_login_data():
         
         SELECT signon_realm,
             origin_url,
-            username_value, 
+            username_value,
+            display_name,
+            username_element,
             date_created,
             datetime(date_created/1000000-11644473600,'unixepoch') AS 'Decoded date_created (UTC)',
             date_last_used,
             CASE date_last_used
-                WHEN 0 THEN 'Synched. Not used on this device.'
+                WHEN 0 THEN 'Synced. Not used on this device.'
                 ELSE datetime(date_last_used/1000000-11644473600,'unixepoch') 
             END AS 'Decoded date_last_used (UTC)',
-                date_last_used,
+                date_password_modified,
             CASE date_password_modified
                 WHEN 0 THEN 'Never'
                 ELSE datetime(date_password_modified/1000000-11644473600,'unixepoch') 
             END AS 'Decoded date_password_modified (UTC)',
-            times_used AS "# of times saved password used",
-            display_name,
+            times_used AS "# of times used",
         
             blacklisted_by_user,
             CASE blacklisted_by_user
