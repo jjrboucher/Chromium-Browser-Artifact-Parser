@@ -4,7 +4,8 @@ import json
 class Preferences:
     """
     This class accepts a "Preferences" file as input (with full path).
-    Currently parses Chrome artifacts. Edge has some slightly different artifacts.
+    Currently parses Chrome artifacts. Edge has some slightly different artifacts, but so far working for Edge
+    with exception that some preferences in the Preferences file are different in Edge, so missing those.
     """
 
     def __init__(self, pref_file):

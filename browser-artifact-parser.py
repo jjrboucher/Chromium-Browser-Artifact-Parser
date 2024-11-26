@@ -183,7 +183,7 @@ if __name__ == '__main__':
     write_excel(all_bookmarks, ws, excel_path)
 
     # *** use the compare feature in pandas to report what is different between bookmarks and backups.
-
+    print(f'\nProfile Folder: {profile_path}')
     print(Prefs(f'{profile_path}/Preferences'))
 
     print(f'\nAll queries completed. {green}Excel file saved to {excel_path}{white}')
