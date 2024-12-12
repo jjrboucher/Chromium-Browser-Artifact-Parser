@@ -34,7 +34,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 # Import the queries from the other Python files to process Google Chrome artifacts
-from Classes.Preferences import Preferences
+from Classes.Preferences import Preferences as Prefs
 from Functions.write_to_excel import write_excel
 from JSON.bookmarks import get_chromium_bookmarks
 from SQLite.cookies import chrome_cookies
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     write_excel(all_bookmarks, ws, excel_path)
 
     # *** use the compare feature in pandas to report what is different between bookmarks and backups.
-
-    print(Preferences(f'{profile_path}/Preferences'))
+    print(f'\nProfile Folder: {profile_path}')
+    print(Prefs(f'{profile_path}/Preferences'))
 
     print(f'\nAll queries completed. {green}Excel file saved to {excel_path}{white}')
