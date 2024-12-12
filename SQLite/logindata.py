@@ -14,9 +14,12 @@ def chrome_login_data():
         
         SELECT signon_realm,
             origin_url,
+            action_url,
+            signon_realm,
             username_value,
             display_name,
             username_element,
+            password_element,
             date_created,
             datetime(date_created/1000000-11644473600,'unixepoch') AS 'Decoded date_created (UTC)',
             date_last_used,
