@@ -27,27 +27,34 @@ class ChromeParserGUI:
 
         # Labels and Buttons
         tk.Label(root, text="Chrome User Profile Folder:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
-        self.profile_entry = tk.Entry(root, width=50)
+        self.profile_entry = tk.Entry(root, width=80)
         self.profile_entry.grid(row=0, column=1, padx=10, pady=5)
-        tk.Button(root, text="Browse", command=self.browse_profile).grid(row=0, column=2, padx=10, pady=5)
+        tk.Button(root, text="Browse", command=self.browse_profile, bg="green", width=10).grid(row=0, column=2, padx=10, pady=5)
 
         tk.Label(root, text="Output Excel File:").grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        self.output_entry = tk.Entry(root, width=50)
+        self.output_entry = tk.Entry(root, width=80)
         self.output_entry.grid(row=1, column=1, padx=10, pady=5)
-        tk.Button(root, text="Browse", command=self.browse_output).grid(row=1, column=2, padx=10, pady=5)
+        tk.Button(root, text="Browse", command=self.browse_output, bg="green", width=10).grid(row=1, column=2, padx=10, pady=5)
 
-        tk.Button(root, text="Run Parser", command=self.run_parser).grid(row=2, column=1, pady=20)
+        tk.Button(root, text="Run Parser", command=self.run_parser, bg="green", width=20).grid(row=2, column=1, pady=20)
 
         # Status Window
         tk.Label(root, text="Status:").grid(row=3, column=0, sticky="nw", padx=10, pady=5)
-        self.status_text = tk.Text(root, height=10, width=70, state="disabled")
-        self.status_text.grid(row=3, column=1, columnspan=2, padx=10, pady=5)
+        self.status_text = tk.Text(root, height=20, width=70, state="disabled", bg="black", fg="white")
+        self.status_text.grid(row=3, column=1, columnspan=2, padx=20, pady=20)
+
+        tk.Button(root, text="Exit", width=10, command=self.exit, bg="red").grid(row=2, column=2, padx=10, pady=5)
+
+    def exit(self):
+        exit()
+
 
     def update_status(self, message):
         self.status_text.config(state="normal")
         self.status_text.insert(tk.END, message + "\n")
         self.status_text.see(tk.END)
         self.status_text.config(state="disabled")
+        root.update()
 
     def browse_profile(self):
         self.profile_path = filedialog.askdirectory(title="Select Chrome User Profile Folder")
@@ -115,8 +122,9 @@ class ChromeParserGUI:
             summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
             write_excel(summary_df, "Summary", self.output_path)
 
-            self.update_status("All processing completed successfully.")
-            messagebox.showinfo("Success", f"Parsing completed! Output saved to {self.output_path}")
+            self.update_status("All processing completed successfully!")
+            self.update_status(f'Output saved to {self.output_path}')
+
 
         except Exception as e:
             self.update_status(f"Error: {e}")
