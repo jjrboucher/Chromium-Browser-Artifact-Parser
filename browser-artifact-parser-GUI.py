@@ -13,6 +13,7 @@ from SQLite.shortcuts import chrome_shortcuts
 from SQLite.WebData import (
     chrome_autofill, chrome_keywords, chrome_masked_credit_cards, chrome_masked_bank_accounts
 )
+import openpyxl
 import pandas as pd
 import sqlite3
 import numpy as np
@@ -117,6 +118,19 @@ class ChromeParserGUI:
             self.update_status("Creating Summary Worksheet...")
             summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
             write_excel(summary_df, "Summary", self.output_path)
+
+            # Load the workbook
+            self.update_status("Reordering some of the worksheets...")
+            wb = openpyxl.load_workbook(self.output_path)
+
+            # Reorganize some of the worksheets
+            wb.move_sheet(wb["Summary"], -(len(wb.sheetnames)-1))
+            wb.move_sheet(wb["Preferences"], -(len(wb.sheetnames)-2))
+            wb.move_sheet(wb["Bookmarks"], -(len(wb.sheetnames)-7))
+            wb.move_sheet(wb["Search Terms"], -(len(wb.sheetnames)-7))
+
+            # Save the workbook
+            wb.save(self.output_path)
 
             self.update_status("All processing completed successfully!")
             self.update_status(f'Output saved to {self.output_path}')
