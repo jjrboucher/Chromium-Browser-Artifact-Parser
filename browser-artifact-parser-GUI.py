@@ -18,11 +18,6 @@ import sqlite3
 import numpy as np
 import io
 
-
-def exit_menu():
-    exit()
-
-
 class ChromeParserGUI:
     def __init__(self, root):
         self.root = root
@@ -48,7 +43,7 @@ class ChromeParserGUI:
         self.status_text = tk.Text(root, height=20, width=70, state="disabled", bg="black", fg="white")
         self.status_text.grid(row=3, column=1, columnspan=2, padx=20, pady=20)
 
-        tk.Button(root, text="Exit", width=10, command=exit_menu, bg="red").grid(row=2, column=2, padx=10, pady=5)
+        tk.Button(root, text="Exit", width=10, command=root.destroy, bg="red").grid(row=2, column=2, padx=10, pady=5)
 
     def update_status(self, message):
         self.status_text.config(state="normal")
