@@ -84,29 +84,36 @@ def chrome_masked_credit_cards():
     # This query extracts info from the masked_credit_cards table in Web Data SQLite file.
     worksheet = "Credit Cards"
     sql_query = """
-        /*
-        Last modified: 2024-09-24
-        Author: Jacques Boucher - jjrboucher@gmail.com
-        Tested with: Chrome v. 129
-        */
-        
-        /*
-        Chrome Browser
-        Runs against Web Data SQLite file
-        Extracts data from masked_credit_cards table.
-        */
-
-        SELECT 	product_description AS "Product Description",
-                name_on_card AS "Name on card",
-                network,
-                last_four AS "Last Four",
-                exp_month AS "Expiry Month",
-                exp_year AS "Expiry Year",
-                bank_name AS "Bank Name",
-                nickname,
-                card_art_url AS "Card Art URL"
-
-        FROM masked_credit_cards    
+                /*
+                Written by Jacques Boucher
+                Date: 29 Jan 2025
+                
+                Queries two tables to pulle out credit card information.
+                The use_date does not correspond to the last time it was used.
+                There is protobuf data in autofill_sync_metadata for the masked_credit_cards.id
+                with an encoded date that appears to more closely align with when it was last used.
+                But parsing that info is more involved, thus not parsed at this time.
+                */
+                SELECT 	mcc.id, 
+                        mcc.name_on_card,
+                        mcc.network,
+                        mcc.last_four,
+                        mcc.exp_month,
+                        mcc.exp_year,
+                        scm.use_count,
+                        scm.use_date,
+                        DATETIME(scm.use_date/1000000-11644473600,'unixepoch') AS "Decoded use_date (UTC)",
+                        scm.billing_address_id AS "Billing Address ID",
+                        mcc.bank_name,
+                        mcc.nickname,
+                        mcc.card_issuer,
+                        mcc.card_issuer_id,
+                        mcc.virtual_card_enrollment_state,
+                        mcc.card_art_url,
+                        mcc.product_description
+                
+                FROM masked_credit_cards AS mcc
+                LEFT JOIN server_card_metadata AS scm on mcc.id == scm.id   
     """
 
     return sql_query, worksheet

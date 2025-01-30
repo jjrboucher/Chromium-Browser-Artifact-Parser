@@ -67,5 +67,5 @@ class Preferences:
                 f'gaia: {self.gaia()}\n'
                 f'Thumbnail URL: {self.thumbnail_url()}\n'
                 f'Profile created: {self.profile_created_date()}\n'
-                f'Profile created using browser version {self.profile_created_version()}\n'
+                f'Profile created using browser version: {self.profile_created_version()}\n'
                 f'Default Download Directory: {self.download_directory()}')
