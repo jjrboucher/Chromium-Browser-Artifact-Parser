@@ -1,3 +1,20 @@
+# Written by Jacques Boucher
+# email: jjrboucher@gmail.com
+# version date: 2025-Jan-30
+#
+# Script to extract data from Google Chrome's or MS Edge's SQLite databases
+# Outputs to an Excel file.
+#
+# tested with Chrome 129, Edge 129, Opera 113
+
+# Other possible parsing to add:
+# Extensions
+# Local Storage - LevelDB files. (under {profile}/Local Storage)
+# Top Sites
+
+# ***ERROR CHECKING TO ADD***
+# DB locked
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from Classes.Preferences import Preferences
@@ -96,13 +113,17 @@ class ChromeParserGUI:
 
         for sqlite_query in chrome_queries.keys():
             self.update_status(f"Processing {sqlite_query}...")
+
             try:
                 df, ws = self.get_dataframes(chrome_queries[sqlite_query][0], chrome_queries[sqlite_query][1])
                 write_excel(df, ws, self.output_path)
                 record_counts.append((ws, len(df)))
-            except:
-                self.update_status(f"Failed to process {sqlite_query}...")
+            except Exception as error:
+                self.update_status(f'Failed to process {sqlite_query}...')
                 record_counts.append((sqlite_query, 0))
+                if "database is locked" in str(error):
+                    print(f'Error! {chrome_queries[sqlite_query][0]} is locked')
+                    self.update_status(f'Error! {chrome_queries[sqlite_query][0]} is locked')
 
         self.update_status("Processing Search Terms...")
         try:
@@ -164,7 +185,7 @@ class ChromeParserGUI:
         # Save the workbook
         wb.save(self.output_path)
 
-        self.update_status("All processing completed successfully!")
+        self.update_status("All processing completed.")
         self.update_status(f'Output saved to {self.output_path}')
 
 
