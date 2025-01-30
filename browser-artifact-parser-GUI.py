@@ -11,7 +11,11 @@ from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
 from SQLite.searchterms import chrome_keyword_historyquery
 from SQLite.shortcuts import chrome_shortcuts
 from SQLite.WebData import (
-    chrome_autofill, chrome_keywords, chrome_masked_credit_cards, chrome_masked_bank_accounts
+    chrome_autofill,
+    chrome_keywords,
+    chrome_masked_credit_cards,
+    chrome_masked_bank_accounts,
+    chrome_addresses
 )
 import openpyxl
 import pandas as pd
@@ -77,6 +81,7 @@ class ChromeParserGUI:
                 "Downloads": [f'{self.profile_path}/History', chrome_downloads],
                 "Downloads Gaps": [f'{self.profile_path}/History', chrome_downloads_gaps],
                 "Autofill": [f'{self.profile_path}/Web Data', chrome_autofill],
+                "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
                 "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
                 "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
                 "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
