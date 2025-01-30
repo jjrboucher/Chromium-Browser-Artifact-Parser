@@ -7,3 +7,5 @@ It will work with Google Chrome profiles. It will also work with other Chromium 
 Older versions of Chrome used different tables and fields in some of the SQLite files, particularly as it relates to form data. This script is not designed to support those older versions.
 
 If there is other data you know that can be parsed that is not being parsed, please reach out to me at the following gmail address: jjrboucher
+
+There are package requirements, but I haven't yet created a requirements.txt file. That will come soon hopefully.
