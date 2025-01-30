@@ -102,7 +102,7 @@ class ChromeParserGUI:
                 record_counts.append((ws, len(df)))
             except:
                 self.update_status(f"Failed to process {sqlite_query}...")
-                record_counts.append(({sqlite_query}, 0))
+                record_counts.append((sqlite_query, 0))
 
         self.update_status("Processing Search Terms...")
         try:
