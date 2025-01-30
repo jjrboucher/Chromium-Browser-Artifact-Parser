@@ -74,76 +74,103 @@ class ChromeParserGUI:
             messagebox.showerror("Error", "Please select both profile and output paths.")
             return
 
-        try:
-            chrome_queries = {
-                'History': [f'{self.profile_path}/History', chrome_history],
-                "History Gaps": [f'{self.profile_path}/History', chrome_history_gaps],
-                "Downloads": [f'{self.profile_path}/History', chrome_downloads],
-                "Downloads Gaps": [f'{self.profile_path}/History', chrome_downloads_gaps],
-                "Autofill": [f'{self.profile_path}/Web Data', chrome_autofill],
-                "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
-                "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
-                "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
-                "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
-                "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
-                "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],
-                "Shortcuts": [f'{self.profile_path}/Shortcuts', chrome_shortcuts],
-                "Cookies": [f'{self.profile_path}/Network/Cookies', chrome_cookies],
-                "FavIcons": [f'{self.profile_path}/Favicons', chrome_favicons]
-            }
+#        try:
+        chrome_queries = {
+            'History': [f'{self.profile_path}/History', chrome_history],
+            "History Gaps": [f'{self.profile_path}/History', chrome_history_gaps],
+            "Downloads": [f'{self.profile_path}/History', chrome_downloads],
+            "Downloads Gaps": [f'{self.profile_path}/History', chrome_downloads_gaps],
+            "Autofill": [f'{self.profile_path}/Web Data', chrome_autofill],
+            "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
+            "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
+            "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
+            "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
+            "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
+            "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],
+            "Shortcuts": [f'{self.profile_path}/Shortcuts', chrome_shortcuts],
+            "Cookies": [f'{self.profile_path}/Network/Cookies', chrome_cookies],
+            "FavIcons": [f'{self.profile_path}/Favicons', chrome_favicons]
+        }
 
-            record_counts = []
+        record_counts = []
 
-            for sqlite_query in chrome_queries.keys():
-                self.update_status(f"Processing {sqlite_query}...")
+        for sqlite_query in chrome_queries.keys():
+            self.update_status(f"Processing {sqlite_query}...")
+            try:
                 df, ws = self.get_dataframes(chrome_queries[sqlite_query][0], chrome_queries[sqlite_query][1])
                 write_excel(df, ws, self.output_path)
                 record_counts.append((ws, len(df)))
+            except:
+                self.update_status(f"Failed to process {sqlite_query}...")
+                record_counts.append(({sqlite_query}, 0))
 
-            self.update_status("Processing Search Terms...")
+        self.update_status("Processing Search Terms...")
+        try:
             dataframe_searchterms, ws = self.process_search_terms()
             write_excel(dataframe_searchterms, ws, self.output_path)
             record_counts.append((ws, len(dataframe_searchterms)))
+        except:
+            self.update_status("Failed to process Search Terms...")
+            record_counts.append(('Search Terms', 0))
 
-            self.update_status("Processing Bookmarks...")
+        self.update_status("Processing Bookmarks...")
+        ws = 'Bookmarks'  # assigning in case it does not get assigned in try/except
+        try:
             bookmarks_df, ws = get_chromium_bookmarks(f'{self.profile_path}/Bookmarks')
+        except:
+            self.update_status("Failed to process Bookmarks...")
+            bookmarks_df = pd.DataFrame()  # empty dataframe
+        try:
             bookmarks_backup_df, ws_bak = get_chromium_bookmarks(f'{self.profile_path}/Bookmarks.bak')
-            all_bookmarks = pd.concat([bookmarks_df, bookmarks_backup_df], ignore_index=True)
-            write_excel(all_bookmarks, ws, self.output_path)
-            record_counts.append((ws, len(all_bookmarks)))
+        except:
+            self.update_status("Failed to process Bookmarks.bak...")
+            bookmarks_backup_df = pd.DataFrame()  # empty dataframe
 
-            self.update_status("Processing Preferences...")
+        all_bookmarks = pd.concat([bookmarks_df, bookmarks_backup_df], ignore_index=True)
+        write_excel(all_bookmarks, ws, self.output_path)
+        record_counts.append((ws, len(all_bookmarks)))
+
+        self.update_status("Processing Preferences...")
+        try:
             preferences = Preferences(f'{self.profile_path}/Preferences')
             preferences_output = io.StringIO()
             print(preferences, file=preferences_output)
             preferences_data = preferences_output.getvalue().splitlines()
             preferences_df = pd.DataFrame(preferences_data, columns=["Preferences Output"])
             write_excel(preferences_df, "Preferences", self.output_path)
+        except:
+            self.update_status("Failed to process Preferences...")
 
-            self.update_status("Creating Summary Worksheet...")
-            summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
-            write_excel(summary_df, "Summary", self.output_path)
+        self.update_status("Creating Summary Worksheet...")
+        summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
+        write_excel(summary_df, "Summary", self.output_path)
 
-            # Load the workbook
-            self.update_status("Reordering some of the worksheets...")
-            wb = openpyxl.load_workbook(self.output_path)
+        # Load the workbook
+        self.update_status("Reordering some of the worksheets...")
+        wb = openpyxl.load_workbook(self.output_path)
 
-            # Reorganize some of the worksheets
-            wb.move_sheet(wb["Summary"], -(len(wb.sheetnames)-1))
+        # Reorganize some of the worksheets
+        wb.move_sheet(wb["Summary"], -(len(wb.sheetnames)-1))
+
+        if 'Preferences' in wb.sheetnames:
             wb.move_sheet(wb["Preferences"], -(len(wb.sheetnames)-2))
+
+        if 'Bookmarks' in wb.sheetnames:
             wb.move_sheet(wb["Bookmarks"], -(len(wb.sheetnames)-7))
+
+        if 'Search Terms' in wb.sheetnames:
             wb.move_sheet(wb["Search Terms"], -(len(wb.sheetnames)-7))
 
-            # Save the workbook
-            wb.save(self.output_path)
+        # Save the workbook
+        wb.save(self.output_path)
 
-            self.update_status("All processing completed successfully!")
-            self.update_status(f'Output saved to {self.output_path}')
+        self.update_status("All processing completed successfully!")
+        self.update_status(f'Output saved to {self.output_path}')
 
 
-        except Exception as e:
-            self.update_status(f"Error: {e}")
-            messagebox.showerror("Error", f"An error occurred: {e}")
+#        except Exception as e:
+#            self.update_status(f"Error: {e}")
+#            messagebox.showerror("Error", f"An error occurred: {e}")
 
     def get_dataframes(self, db_file, function):
         query, worksheet_name = function()

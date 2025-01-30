@@ -1,4 +1,5 @@
 def chrome_keyword_historyquery():
+    worksheet = "Search Terms"
     history_query = """
         SELECT	urls.id, 
         urls.url, 
@@ -13,4 +14,4 @@ def chrome_keyword_historyquery():
         LEFT JOIN keyword_search_terms ON urls.id=keyword_search_terms.url_id
     """
 
-    return history_query, ""
+    return history_query, worksheet
