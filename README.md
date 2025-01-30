@@ -9,3 +9,5 @@ Older versions of Chrome used different tables and fields in some of the SQLite 
 If there is other data you know that can be parsed that is not being parsed, please reach out to me at the following gmail address: jjrboucher
 
 There are package requirements, but I haven't yet created a requirements.txt file. That will come soon hopefully.
+
+The executable version under the "dist" folder is an older version. It does not have the same parsing or error checking as the current version.
