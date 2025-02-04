@@ -1,3 +1,5 @@
+**NOTE: The script was written for and tested against a Chrome profile on a Windows computer. It has been tested against Edge on Windows and works. But it won't work against a mobile Chrome user profile where the SQLite files have a different name (and possibly different structure requiring a different SQLite statement to work correctly?).**<br>
+
 When you run the script, it prompts you first for the browser profile folder you wish to process.
 
 Next, it prompts you for the location and name of the MS Excel spreadsheet that is used for the output of the script.
