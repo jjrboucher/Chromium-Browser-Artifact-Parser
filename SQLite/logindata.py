@@ -119,7 +119,7 @@ def chrome_login_data_gaps():
             logins.id AS "Record Number", 
             ROWID-1 AS "Number of Missing Visits", /* Because numbering starts at 1, missing records is the first allocated record -1 */
             "" AS "Beginning Date Created Timestamp", /* We don't have a beginning timestamp as we don't have that record */
-            DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Ending Date Created Timestamp"  /* Timestamp of the last record */
+            DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Ending Date Created Timestamp (UTC)"  /* Timestamp of the last record */
         
             FROM logins WHERE logins.id = (SELECT MIN(logins.id) FROM logins) AND logins.id >1 /* The first record # in the visits table is greater than 1.*/
         
@@ -131,8 +131,8 @@ def chrome_login_data_gaps():
                 SELECT LAG (ROWID,1) OVER (ORDER BY ROWID) AS "Previous Record Number", /*  Gets the previous record to the current one */
                 rowid AS ROWID, /* Current record */
                 (ROWID - (LAG (ROWID,1) OVER (ORDER BY ROWID))-1) AS "Number of Missing Visits", /* Calculates the difference between the previous and current record # */
-                LAG(DATETIME(logins.date_created/1000000-11644473600,'unixepoch'),1) OVER (ORDER BY ROWID) as "Beginning Date Created Timestamp", /* Gets the timestamp from the previous record */
-                DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Ending Date Created Timestamp" /* Gets the timestamp of the current record */
+                LAG(DATETIME(logins.date_created/1000000-11644473600,'unixepoch'),1) OVER (ORDER BY ROWID) as "Beginning Date Created Timestamp (UTC)", /* Gets the timestamp from the previous record */
+                DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Ending Date Created Timestamp (UTC)" /* Gets the timestamp of the current record */
                 FROM logins
             )
             WHERE ROWID - "Previous Record Number" >1 /* Only gets the above if the difference between the current record # and previous record # is greater than 1 - in other words, there is a gap in the numbering */
@@ -144,7 +144,7 @@ def chrome_login_data_gaps():
             ROWID AS "Previous Record Number", /* Because we are selecting the last allocated record, assigning that to the previous record # */
             "" AS ROWID, /* The last record is missing, thus it's blank */
             (SELECT sqlite_sequence.seq from sqlite_sequence WHERE sqlite_sequence.name LIKE "logins")-ROWID AS "Number of Missing Records", /* Finds the last record # used, and substracts last allocated record # */
-            DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Beginning Date Created Timestamp",
+            DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Beginning Date Created Timestamp (UTC)",
             "" AS "Ending Date Created Timestamp"
             FROM logins
             WHERE logins.id = (SELECT MAX(logins.id) FROM logins) /* Only getting the last allocated record. */ AND logins.id < 

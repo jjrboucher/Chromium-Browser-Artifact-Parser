@@ -29,7 +29,7 @@ def chrome_shortcuts():
             url,
             number_of_hits,
             last_access_time,
-            datetime(last_access_time/1000000-11644473600,'unixepoch', 'localtime') AS "Decoded last_access_time (local time)",
+            datetime(last_access_time/1000000-11644473600,'unixepoch') AS "Decoded last_access_time (UTC))",
     
             transition,
             CASE (transition)

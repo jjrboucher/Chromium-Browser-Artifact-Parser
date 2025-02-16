@@ -25,7 +25,7 @@ def chrome_cookies():
                 last_access_utc,
                 datetime(last_access_utc/1000000-11644473600,'unixepoch') AS 'Decoded last_access_utc (UTC)',
                 last_update_utc,
-                datetime(last_update_utc/1000000-11644473600,'unixepoch') AS 'Decoded last_update_utc(UTC)',
+                datetime(last_update_utc/1000000-11644473600,'unixepoch') AS 'Decoded last_update_utc (UTC)',
                 expires_utc,
                 CASE expires_utc
                     WHEN 0 then ""

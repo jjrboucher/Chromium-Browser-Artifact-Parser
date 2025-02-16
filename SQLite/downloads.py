@@ -25,17 +25,17 @@ def chrome_downloads():
                 received_bytes,
                 total_bytes,
                 start_time, 
-                datetime(start_time/1000000-11644473600,'unixepoch', 'localtime') AS "Decoded start_time (local time)", 
+                datetime(start_time/1000000-11644473600,'unixepoch') AS "Decoded start_time (UTC)", 
                 end_time,
                 CASE
-                   WHEN end_time>0 THEN datetime(end_time/1000000-11644473600,'unixepoch','localtime')
+                   WHEN end_time>0 THEN datetime(end_time/1000000-11644473600,'unixepoch')
                    ELSE 0
-                END AS "Decoded end_time (local time)",
+                END AS "Decoded end_time (UTC)",
                 last_access_time,
                 CASE 
-                   WHEN last_access_time>0 THEN datetime(last_access_time/1000000-11644473600,'unixepoch','localtime')
+                   WHEN last_access_time>0 THEN datetime(last_access_time/1000000-11644473600,'unixepoch')
                    ELSE 'Not opened via Chrome'
-                END AS "Decoded last_access_time (local time)",
+                END AS "Decoded last_access_time (UTC)",
                 last_modified, 
                 referrer,
                 site_url, 
@@ -137,7 +137,7 @@ def chrome_downloads_gaps():
             downloads.id AS "Record Number", 
             ROWID-1 AS "Number of Missing Visits", /* Because numbering starts at 1, missing records is the first allocated record -1 */
             "" AS "Beginning Timestamp", /* We don't have a beginning timestamp as we don't have that record */
-            DATETIME(downloads.start_time/1000000-11644473600,'unixepoch') AS "Ending Timestamp"  /* Timestamp of the last record */
+            DATETIME(downloads.start_time/1000000-11644473600,'unixepoch') AS "Ending Timestamp (UTC)"  /* Timestamp of the last record */
         
             FROM downloads WHERE downloads.id = (SELECT MIN(downloads.id) FROM downloads) AND downloads.id >1 /* The first record # in the visits table is greater than 1.*/
         
@@ -149,8 +149,8 @@ def chrome_downloads_gaps():
                 SELECT LAG (ROWID,1) OVER (ORDER BY ROWID) AS "Previous Record Number", /*  Gets the previous record to the current one */
                 rowid AS ROWID, /* Current record */
                 (ROWID - (LAG (ROWID,1) OVER (ORDER BY ROWID))-1) AS "Number of Missing Visits", /* Calculates the difference between the previous and current record # */
-                LAG(DATETIME(downloads.start_time/1000000-11644473600,'unixepoch'),1) OVER (ORDER BY ROWID) as "Beginning Timestamp", /* Gets the timestamp from the previous record */
-                DATETIME(downloads.start_time/1000000-11644473600,'unixepoch') AS "Ending Timestamp" /* Gets the timestamp of the current record */
+                LAG(DATETIME(downloads.start_time/1000000-11644473600,'unixepoch'),1) OVER (ORDER BY ROWID) as "Beginning Timestamp (UTC)", /* Gets the timestamp from the previous record */
+                DATETIME(downloads.start_time/1000000-11644473600,'unixepoch') AS "Ending Timestamp (UTC)" /* Gets the timestamp of the current record */
                 FROM downloads
             )
         WHERE ROWID - "Previous Record Number" >1 /* Only gets the above if the difference between the current record # and previous record # is greater than 1 - in other words, there is a gap in the numbering */
