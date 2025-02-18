@@ -195,7 +195,7 @@ def chrome_addresses():
                 Written by Jacques Boucher
                 Date: 30 Jan 2025
 
-                Queries two tables to pull out main artifacts from stored address information.
+                Queries two tables in Web Data to pull out main artifacts from stored address information.
                 
                 */
                 SELECT 	addresses.guid, 

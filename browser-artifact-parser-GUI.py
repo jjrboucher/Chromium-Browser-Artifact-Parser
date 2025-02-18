@@ -27,6 +27,7 @@ from SQLite.history import chrome_history, chrome_history_gaps
 from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
 from SQLite.searchterms import chrome_keyword_historyquery
 from SQLite.shortcuts import chrome_shortcuts
+from SQLite.topsites import chrome_topsites
 from SQLite.WebData import (
     chrome_autofill,
     chrome_keywords,
@@ -34,6 +35,8 @@ from SQLite.WebData import (
     chrome_masked_bank_accounts,
     chrome_addresses
 )
+from SQLite.webasssist import edge_webassist
+
 import openpyxl
 import pandas as pd
 import sqlite3
@@ -91,8 +94,7 @@ class ChromeParserGUI:
             messagebox.showerror("Error", "Please select both profile and output paths.")
             return
 
-#        try:
-        chrome_queries = {
+        chromium_queries = {
             'History': [f'{self.profile_path}/History', chrome_history],
             "History Gaps": [f'{self.profile_path}/History', chrome_history_gaps],
             "Downloads": [f'{self.profile_path}/History', chrome_downloads],
@@ -105,25 +107,45 @@ class ChromeParserGUI:
             "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
             "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],
             "Shortcuts": [f'{self.profile_path}/Shortcuts', chrome_shortcuts],
+            "Top Sites": [f'{self.profile_path}/Top Sites', chrome_topsites],
             "Cookies": [f'{self.profile_path}/Network/Cookies', chrome_cookies],
             "FavIcons": [f'{self.profile_path}/Favicons', chrome_favicons]
         }
 
+        edge_queries = {
+            "Web Assist": [f'{self.profile_path}/WebAssistDatabase', edge_webassist]
+        }
+
         record_counts = []
 
-        for sqlite_query in chrome_queries.keys():
+        for sqlite_query in chromium_queries.keys():  # queries for all Chromium based browsers
             self.update_status(f"Processing {sqlite_query}...")
 
             try:
-                df, ws = self.get_dataframes(chrome_queries[sqlite_query][0], chrome_queries[sqlite_query][1])
+                df, ws = self.get_dataframes(chromium_queries[sqlite_query][0], chromium_queries[sqlite_query][1])
                 write_excel(df, ws, self.output_path)
                 record_counts.append((ws, len(df)))
             except Exception as error:
                 self.update_status(f'Failed to process {sqlite_query}...')
                 record_counts.append((sqlite_query, 0))
                 if "database is locked" in str(error):
-                    print(f'Error! {chrome_queries[sqlite_query][0]} is locked')
-                    self.update_status(f'Error! {chrome_queries[sqlite_query][0]} is locked')
+                    print(f'Error! {chromium_queries[sqlite_query][0]} is locked')
+                    self.update_status(f'Error! {chromium_queries[sqlite_query][0]} is locked')
+
+        if "edge" in self.profile_path.lower():  # MS Edge Browser
+            for sqlite_query in edge_queries.keys():
+                self.update_status(f"Processing {sqlite_query}...")
+
+                try:
+                    df, ws = self.get_dataframes(edge_queries[sqlite_query][0], edge_queries[sqlite_query][1])
+                    write_excel(df, ws, self.output_path)
+                    record_counts.append((ws, len(df)))
+                except Exception as error:
+                    self.update_status(f'Failed to process {sqlite_query}...')
+                    record_counts.append((sqlite_query, 0))
+                    if "database is locked" in str(error):
+                        print(f'Error! {edge_queries[sqlite_query][0]} is locked')
+                        self.update_status(f'Error! {edge_queries[sqlite_query][0]} is locked')
 
         self.update_status("Processing Search Terms...")
         try:

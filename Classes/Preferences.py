@@ -16,7 +16,7 @@ class Preferences:
     def previous_nav(self):
         try:
             previous_nav = self.prefs.get("NewTabPage").get("PrevNavigationTime")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             previous_nav = "not found"
 
         return 'None' if previous_nav is None else previous_nav
@@ -24,7 +24,7 @@ class Preferences:
     def email(self):
         try:
             email_address =  self.prefs.get("account_info")[0].get("email")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             email_address =  "not found"
 
         return 'None' if email_address is None else email_address
@@ -32,7 +32,7 @@ class Preferences:
     def full_name(self):
         try:
             full_name =  self.prefs.get("account_info")[0].get("full_name")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             full_name =  "not found"
 
         return 'None' if full_name is None else full_name
@@ -40,7 +40,7 @@ class Preferences:
     def gaia(self):
         try:
             gaia_number =  self.prefs.get("account_info")[0].get("gaia")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             gaia_number =  "not found"
 
         return 'None' if gaia_number is None else gaia_number
@@ -48,7 +48,7 @@ class Preferences:
     def given_name(self):
         try:
             given_name: object =  self.prefs.get("account_info")[0].get("given_name")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             given_name = "not found"
 
         return 'None' if given_name is None else given_name
@@ -56,7 +56,7 @@ class Preferences:
     def thumbnail_url(self):
         try:
             thumbnail_url =  self.prefs.get("account_info")[0].get("picture_url")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             thumbnail_url =  "not found"
 
         return 'None' if thumbnail_url is None else thumbnail_url
@@ -64,7 +64,7 @@ class Preferences:
     def language(self):
         try:
             lang =  self.prefs.get("account_info")[0].get("locale")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             lang =  "not found"
 
         return 'None' if lang is None else lang
@@ -72,7 +72,7 @@ class Preferences:
     def privacy_settings(self):
         try:
             privacy_settings =  self.prefs.get("browser").get("clear_data")
-        except(KeyError, IndexError, AttributeError):
+        except(KeyError, IndexError, AttributeError, TypeError):
             privacy_settings = "not found"
 
         return 'None' if privacy_settings is None else privacy_settings
@@ -83,7 +83,7 @@ class Preferences:
             binary_number = (c_id_int.bit_length() +7) // 8  # Determines the # of bytes in the decoded value
             binary_array =c_id_int.to_bytes(binary_number, "big")  # convert to an array - big endian
             country_id =  f'{c_id_int} = {binary_array.decode()}'  # return the raw and decoded values
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             country_id =  "not found"
 
         return 'None' if country_id is None else country_id
@@ -98,7 +98,7 @@ class Preferences:
             # Add to base date
             human_readable_date = base_date + timedelta(seconds=timestamp_in_seconds)
             creation_time =  f'{creation_time} = {human_readable_date} UTC'
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             creation_time =  "not found"
 
         return 'None' if creation_time is None else creation_time
@@ -106,7 +106,7 @@ class Preferences:
     def profile_created_version(self):
         try:
             profile_version =  self.prefs.get("profile").get("created_by_version")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             profile_version = "not found"
 
         return 'None' if profile_version is None else profile_version
@@ -114,10 +114,10 @@ class Preferences:
     def download_directory(self):
         try:
             dd =  self.prefs.get("download").get("default_directory")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             try:
                 dd =  self.prefs.get("savefile").get("default_directory")
-            except (KeyError, IndexError, AttributeError):
+            except (KeyError, IndexError, AttributeError, TypeError):
                 dd =  "not found"
 
         return 'None' if dd is None else dd
@@ -125,7 +125,7 @@ class Preferences:
     def prompt_for_download(self):
         try:
             prompt =  self.prefs.get("download").get("prompt_for_download")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             prompt =  "not found"
 
         return 'None' if prompt is None else prompt
@@ -138,7 +138,7 @@ class Preferences:
         mv_parsed = 'nil'
         try:
             mv = self.prefs.get("custom_links").get("list")
-        except (KeyError, IndexError, AttributeError):
+        except (KeyError, IndexError, AttributeError, TypeError):
             mv = "not found"
 
         if mv != "not found":  # meaning there are URLs to parse
