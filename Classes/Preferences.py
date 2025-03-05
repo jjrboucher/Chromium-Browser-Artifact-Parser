@@ -8,8 +8,9 @@ class Preferences:
     with exception that some preferences in the Preferences file are different in Edge, so missing those.
     """
 
-    def __init__(self, pref_file):
+    def __init__(self, pref_file, browser):
         self.pref_file = pref_file
+        self.browser = browser
         with open(self.pref_file, 'r', encoding='utf-8') as p:
             self.prefs = json.load(p)
 
@@ -46,12 +47,32 @@ class Preferences:
         return 'None' if gaia_number is None else gaia_number
 
     def given_name(self):
+
         try:
             given_name: object =  self.prefs.get("account_info")[0].get("given_name")
         except (KeyError, IndexError, AttributeError, TypeError):
             given_name = "not found"
 
         return 'None' if given_name is None else given_name
+
+    def edge_first_name(self):
+
+        try:
+            fname = self.prefs.get("account_info")[0].get("edge_account_first_name")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            fname = "not found"
+
+        return fname
+
+    def edge_last_name(self):
+
+        try:
+            lname = self.prefs.get("account_info")[0].get("edge_account_last_name")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            lname = "not found"
+
+        return lname
+
 
     def thumbnail_url(self):
         try:
@@ -217,10 +238,15 @@ class Preferences:
 
     def __str__(self):
 
-        return (f'\nEmail: {self.email()}\n'
+        preferences =  (f'\nEmail: {self.email()}\n'
                 f'Full name: {self.full_name()}\n'
-                f'Given name: {self.given_name()}\n'
-                f'gaia: {self.gaia()}\n'
+                f'Given name: {self.given_name()}\n')
+
+        if self.browser == "Edge":  # preferences unique to Edge browsser
+            preferences = preferences + (f'Edge First name: {self.edge_first_name()}\n'
+                         f'Edge Last name: {self.edge_last_name()}\n')
+
+        preferences = preferences + (f'gaia: {self.gaia()}\n'
                 f'Thumbnail URL: {self.thumbnail_url()}\n'
                 f'Profile created: {self.profile_created_date()}\n'
                 f'Profile created using browser version: {self.profile_created_version()}\n'
@@ -232,3 +258,5 @@ class Preferences:
                 f'URL startup list: {self.startup_urls()}'
                 f'\n\nThe following are shortcuts that appear on a new tab:\n'
                 f'{self.new_tab()}')
+
+        return preferences

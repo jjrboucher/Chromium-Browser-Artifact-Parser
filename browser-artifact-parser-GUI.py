@@ -136,7 +136,9 @@ class ChromeParserGUI:
                     print(f'Error! {chromium_queries[sqlite_query][0]} is locked')
                     self.update_status(f'Error! {chromium_queries[sqlite_query][0]} is locked')
 
+        browser = "Chrome"
         if "edge" in self.profile_path.lower():  # MS Edge Browser
+            browser = "Edge"
             for sqlite_query in edge_queries.keys():
                 self.update_status(f"Processing {sqlite_query}...")
 
@@ -179,7 +181,7 @@ class ChromeParserGUI:
 
         self.update_status("Processing Preferences...")
         try:
-            preferences = Preferences(f'{self.profile_path}/Preferences')
+            preferences = Preferences(f'{self.profile_path}/Preferences', browser)
             preferences_output = io.StringIO()
             print(preferences, file=preferences_output)
             preferences_data = preferences_output.getvalue().splitlines()
