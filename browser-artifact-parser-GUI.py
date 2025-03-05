@@ -46,9 +46,13 @@ import io
 class ChromeParserGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chrome Parser")
+        self.root.title("Chromium Browser Parser")
         self.profile_path = None
         self.output_path = None
+
+        # icon
+        self.icon = tk.PhotoImage(file="./images/browser_chromium_icon.png")
+        self.root.iconphoto(False,self.icon)
 
         # Labels and Buttons
         tk.Label(root, text="Chrome User Profile Folder:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
