@@ -148,7 +148,7 @@ class Preferences:
                                        f'title: {entry.get("title")},  '
                                        f'url: {entry.get("url")}\n')
 
-        return mv_parsed
+        return f'     Nil' if mv_parsed == "" else mv_parsed
 
     def startup(self):
         """
@@ -183,7 +183,7 @@ class Preferences:
             urls = self.prefs.get("session").get("startup_urls")
         except (KeyError, IndexError, AttributeError, TypeError):
             urls = "not found"
-            url_list = "not found"
+            url_list = f'\n     Nil'
 
         if urls != "not found":  # meaning there are startup URLs.
             # returns a list of one or more URLs which must be broken down.
