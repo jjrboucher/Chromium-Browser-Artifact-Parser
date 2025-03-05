@@ -4,7 +4,7 @@ import json
 class Preferences:
     """
     This class accepts a "Preferences" file as input (with full path).
-    Currently parses Chrome artifacts. Edge has some slightly different artifacts, but so far working for Edge
+    Currently, parses Chrome artifacts. Edge has some slightly different artifacts, but so far working for Edge
     with exception that some preferences in the Preferences file are different in Edge, so missing those.
     """
 
@@ -150,6 +150,70 @@ class Preferences:
 
         return mv_parsed
 
+    def startup(self):
+        """
+        Returns the startup value and verbose description
+        1 = Continue from where you left off.
+        4 = Open specific URLs.
+        5 = Open the New Tab page.
+
+        Other values not defined at this time
+
+        """
+
+        startup_option={1:"Continue where you left off", 4:"Open specific URLs", 5:"Open the New Tab page"}
+
+        try:
+            startup_value = self.prefs.get("session").get("restore_on_startup")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            startup_value = "not found"
+
+        if startup_value != "not found":  # meaning there is a value
+            return f'{startup_value}: {startup_option[startup_value]}' if startup_value in startup_option.keys() \
+                else f'{startup_value}: New Value! Check source code.'
+
+        return startup_value
+
+    def startup_urls(self):
+        """
+        Returns the startup URLs.
+        """
+        url_list = f''
+        try:
+            urls = self.prefs.get("session").get("startup_urls")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            url_list = "not found"
+
+        if urls != "not found":  # meaning there are startup URLs.
+            # returns a list of one or more URLs which must be broken down.
+            for url in urls:
+                url_list = url_list + f'\n     {url}'
+
+        return url_list
+
+    def homepage(self):
+        """
+        Returns the setting for the homepage button
+        """
+        try:
+            home = self.prefs.get("homepage")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            home = "not found"
+
+        return "None" if home == "" else home
+
+    def homepagenewtab(self):
+        """
+        Returns whether the home page button is a new tab.
+        """
+
+        try:
+            homenewtab = self.prefs.get("homepage_is_newtabpage")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            homenewtab = "not found"
+
+        return homenewtab
+
     def __str__(self):
 
         return (f'\nEmail: {self.email()}\n'
@@ -160,6 +224,10 @@ class Preferences:
                 f'Profile created: {self.profile_created_date()}\n'
                 f'Profile created using browser version: {self.profile_created_version()}\n'
                 f'Default Download Directory: {self.download_directory()}\n'
-                f'Prompt for Download Directory: {self.prompt_for_download()}'
+                f'Prompt for Download Directory: {self.prompt_for_download()}\n'
+                f'URL for Homepage button: {self.homepage()}\n'
+                f'Is homepage a new tab? {self.homepagenewtab()}\n'
+                f'Startup value: {self.startup()}\n'
+                f'URL startup list: {self.startup_urls()}'
                 f'\n\nThe following are shortcuts that appear on a new tab:\n'
                 f'{self.new_tab()}')
