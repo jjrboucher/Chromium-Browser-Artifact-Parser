@@ -182,6 +182,7 @@ class Preferences:
         try:
             urls = self.prefs.get("session").get("startup_urls")
         except (KeyError, IndexError, AttributeError, TypeError):
+            urls = "not found"
             url_list = "not found"
 
         if urls != "not found":  # meaning there are startup URLs.
