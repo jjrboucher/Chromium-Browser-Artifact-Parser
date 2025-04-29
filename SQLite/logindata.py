@@ -15,7 +15,6 @@ def chrome_login_data():
         SELECT signon_realm,
             origin_url,
             action_url,
-            signon_realm,
             username_value,
             display_name,
             username_element,

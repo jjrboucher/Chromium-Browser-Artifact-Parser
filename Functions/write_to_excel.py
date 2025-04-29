@@ -15,7 +15,7 @@ def write_excel(dataframe, worksheet_name, excel_file):
 
     if os.path.isfile(excel_file):  # if the Excel file already exists
         # Append to existing Excel file
-        with pd.ExcelWriter(excel_file, mode='a') as writer:
+        with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
             dataframe.to_excel(writer, sheet_name=worksheet_name, index=False)
     else:
         # Create a new Excel file
