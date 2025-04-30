@@ -208,7 +208,9 @@ class Preferences:
 
         """
 
-        startup_option={1:"Continue where you left off", 4:"Open specific URLs", 5:"Open the New Tab page"}
+        startup_option={1:"Continue where you left off",
+                        4:"Open specific URLs",
+                        5:"Open the New Tab page"}
 
         try:
             startup_value = self.prefs.get("session").get("restore_on_startup")
