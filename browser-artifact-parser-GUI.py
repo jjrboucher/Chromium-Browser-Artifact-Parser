@@ -1,6 +1,6 @@
 # Written by Jacques Boucher
 # email: jjrboucher@gmail.com
-# version date: 2025-Mar-05
+# version date: 2025-Apr-29
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file.
