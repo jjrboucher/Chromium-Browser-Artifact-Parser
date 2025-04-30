@@ -181,7 +181,7 @@ class ChromeParserGUI:
 
         self.update_status("Processing Preferences...")
         try:
-            preferences = Preferences(f'{self.profile_path}/Preferences', browser)
+            preferences = Preferences(f'{self.profile_path}/Preferences')
             preferences_output = io.StringIO()
             print(preferences, file=preferences_output)
             preferences_data = preferences_output.getvalue().splitlines()

@@ -8,19 +8,11 @@ class Preferences:
     with exception that some preferences in the Preferences file are different in Edge, so missing those.
     """
 
-    def __init__(self, pref_file, browser):
+    def __init__(self, pref_file):
         self.pref_file = pref_file
-        self.browser = browser
+        #self.browser = browser
         with open(self.pref_file, 'r', encoding='utf-8') as p:
             self.prefs = json.load(p)
-
-    def previous_nav(self):
-        try:
-            previous_nav = self.prefs.get("NewTabPage").get("PrevNavigationTime")
-        except (KeyError, IndexError, AttributeError, TypeError):
-            previous_nav = "not found"
-
-        return 'None' if previous_nav is None else previous_nav
 
     def email(self):
         try:
@@ -47,13 +39,26 @@ class Preferences:
         return 'None' if gaia_number is None else gaia_number
 
     def given_name(self):
-
+        """
+        Returns Google given name
+        """
         try:
             given_name: object =  self.prefs.get("account_info")[0].get("given_name")
         except (KeyError, IndexError, AttributeError, TypeError):
             given_name = "not found"
 
-        return 'None' if given_name is None else given_name
+        return given_name
+
+    def profile_name(self):
+        """
+        Returns the profile name
+        """
+        try:
+            profile_name: object =  self.prefs.get("profile").get("name")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            profile_name = "not found"
+
+        return profile_name
 
     def edge_first_name(self):
 
@@ -88,7 +93,7 @@ class Preferences:
         except (KeyError, IndexError, AttributeError, TypeError):
             lang =  "not found"
 
-        return 'None' if lang is None else lang
+        return lang
 
     def privacy_settings(self):
         try:
@@ -107,7 +112,7 @@ class Preferences:
         except (KeyError, IndexError, AttributeError, TypeError):
             country_id =  "not found"
 
-        return 'None' if country_id is None else country_id
+        return country_id
 
     def profile_created_date(self):
         try:
@@ -122,7 +127,23 @@ class Preferences:
         except (KeyError, IndexError, AttributeError, TypeError):
             creation_time =  "not found"
 
-        return 'None' if creation_time is None else creation_time
+        return creation_time
+
+    def previousNavigationTime(self):
+        try:
+            prev_nav_time = self.prefs.get("NewTabPage").get("PrevNavigationTime")
+            # WebKit timestamp is in microseconds since January 1, 1601
+            base_date = datetime(1601, 1, 1)
+            # Convert WebKit time (microseconds) to seconds
+            timestamp_in_seconds = int(prev_nav_time) / 1_000_000
+            # Add to base date
+            human_readable_date = base_date + timedelta(seconds=timestamp_in_seconds)
+            prev_nav_time =  f'{prev_nav_time} = {human_readable_date} UTC'
+        except (KeyError, IndexError, AttributeError, TypeError):
+            prev_nav_time =  "not found"
+
+        return prev_nav_time
+
 
     def profile_created_version(self):
         try:
@@ -130,18 +151,23 @@ class Preferences:
         except (KeyError, IndexError, AttributeError, TypeError):
             profile_version = "not found"
 
-        return 'None' if profile_version is None else profile_version
+        return profile_version
 
     def download_directory(self):
         try:
             dd =  self.prefs.get("download").get("default_directory")
         except (KeyError, IndexError, AttributeError, TypeError):
-            try:
-                dd =  self.prefs.get("savefile").get("default_directory")
-            except (KeyError, IndexError, AttributeError, TypeError):
-                dd =  "not found"
+            dd =  "not found"
 
-        return 'None' if dd is None else dd
+        return dd
+
+    def save_file_directory(self):
+        try:
+            sfd =  self.prefs.get("savefile").get("default_directory")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            sfd =  "not found"
+
+        return sfd
 
     def prompt_for_download(self):
         try:
@@ -149,14 +175,14 @@ class Preferences:
         except (KeyError, IndexError, AttributeError, TypeError):
             prompt =  "not found"
 
-        return 'None' if prompt is None else prompt
+        return prompt
 
     def new_tab(self):
         """
         links you see on a new tab
         """
 
-        mv_parsed = 'nil'
+        mv_parsed = ''
         try:
             mv = self.prefs.get("custom_links").get("list")
         except (KeyError, IndexError, AttributeError, TypeError):
@@ -236,27 +262,71 @@ class Preferences:
 
         return homenewtab
 
+    def exit_type(self):
+        """
+        Returns the exit type - Normal or Crashed
+        """
+
+        return self.prefs.get("profile").get("exit_type")
+
+    def edgeArtifacts(self):
+        """
+        Returns Edge artifacts if present
+        """
+        try:
+            edgeFirstName = f'Edge First name: {self.edge_first_name()}\n'
+        except (KeyError, IndexError, AttributeError, TypeError):
+            edgeFirstName = 'not found'
+
+        try:
+            edgeLastName = f'Edge Last name: {self.edge_last_name()}\n'
+        except (KeyError, IndexError, AttributeError, TypeError):
+            edgeLastName = 'not found'
+
+        return (f'Edge First Name: {edgeFirstName}\n'
+                f'Edge Last Name: {edgeLastName}\n')
+
+    def chrome_sync(self):
+        """
+        To be parsed in the future
+        self.prefs.get("sync").get("data_type_status_for_sync_to_signin")
+        Use a tuple of values to parse
+        """
+        pass
+
+    def edge_sync(self):
+        """
+        To be parsed in the future
+        self.prefs.get("sync")
+        use a tuple of values to parse
+        """
+        pass
+
+
     def __str__(self):
 
         preferences =  (f'\nEmail: {self.email()}\n'
                 f'Full name: {self.full_name()}\n'
-                f'Given name: {self.given_name()}\n')
-
-        if self.browser == "Edge":  # preferences unique to Edge browsser
-            preferences = preferences + (f'Edge First name: {self.edge_first_name()}\n'
-                         f'Edge Last name: {self.edge_last_name()}\n')
-
-        preferences = preferences + (f'gaia: {self.gaia()}\n'
+                f'Given name: {self.given_name()}\n'
+                f'Profile name: {self.profile_name()}\n'
+                f'Edge First Name (if applicable): {self.edge_first_name()}\n'
+                f'Edge Last Name (if applicable): {self.edge_last_name()}\n'
+                f'gaia: {self.gaia()}\n'
                 f'Thumbnail URL: {self.thumbnail_url()}\n'
                 f'Profile created: {self.profile_created_date()}\n'
                 f'Profile created using browser version: {self.profile_created_version()}\n'
+                f'Previous Navigation Time: {self.previousNavigationTime()}\n'
+                f'Country ID at install: {self.country_id()}\n'
+                f'Language: {self.language()}\n'
                 f'Default Download Directory: {self.download_directory()}\n'
                 f'Prompt for Download Directory: {self.prompt_for_download()}\n'
+                f'Last "Save As" Directory: {self.save_file_directory()}\n'
+                f'Exit Type: {self.exit_type()}\n'
                 f'URL for Homepage button: {self.homepage()}\n'
                 f'Is homepage a new tab? {self.homepagenewtab()}\n'
                 f'Startup value: {self.startup()}\n'
-                f'URL startup list: {self.startup_urls()}'
-                f'\n\nThe following are shortcuts that appear on a new tab:\n'
+                f'URL startup list: {self.startup_urls()}\n'
+                f'\nThe following are shortcuts that appear on a new tab:\n'
                 f'{self.new_tab()}')
 
         return preferences
