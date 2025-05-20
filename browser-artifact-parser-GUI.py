@@ -1,22 +1,23 @@
-# Written by Jacques Boucher
+# Written by Jacques Boucher (Enhanced UI Version)
 # email: jjrboucher@gmail.com
-# version date: 2025-Mar-05
+# version date: 2025-May-20 (UI Enhanced)
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
-# Outputs to an Excel file.
+# Outputs to an Excel file with modern UI and artifact selection
 #
 # tested with Chrome 129, Edge 129, Opera 113
 
-# Other possible parsing to add:
-# Extensions
-# Local Storage - LevelDB files. (under {profile}/Local Storage)
-# Top Sites
-
-# ***ERROR CHECKING TO ADD***
-# DB locked
+# Written by Jacques Boucher (Enhanced UI Version)
+# email: jjrboucher@gmail.com
+# version date: 2025-Mar-05 (UI Enhanced)
+#
+# Script to extract data from Google Chrome's or MS Edge's SQLite databases
+# Outputs to an Excel file with modern UI and artifact selection
+#
+# tested with Chrome 129, Edge 129, Opera 113
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk, font
 from Classes.Preferences import Preferences
 from Functions.write_to_excel import write_excel
 from JSON.bookmarks import get_chromium_bookmarks
@@ -42,186 +43,503 @@ import pandas as pd
 import sqlite3
 import numpy as np
 import io
+import threading
 
-class ChromeParserGUI:
+
+class ModernChromeParserGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chromium Browser Parser")
+        self.root.title("Chromium Browser Parser - Enhanced Edition")
+        self.root.geometry("1000x750")
+        self.root.configure(bg='#f0f0f0')
+
+        # Style configuration
+        self.setup_styles()
+
+        # Initialize variables
         self.profile_path = None
         self.output_path = None
+        self.is_processing = False
 
-        # icon
-        self.icon = tk.PhotoImage(file="./images/browser_chromium_icon.png")
-        self.root.iconphoto(False,self.icon)
+        # Artifact selection variables
+        self.artifact_vars = {}
+        self.setup_artifact_selection()
 
-        # Labels and Buttons
-        tk.Label(root, text="Chrome User Profile Folder:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
-        self.profile_entry = tk.Entry(root, width=80)
-        self.profile_entry.grid(row=0, column=1, padx=10, pady=5)
-        tk.Button(root, text="Browse", command=self.browse_profile, bg="green", width=10).grid(row=0, column=2, padx=10, pady=5)
+        # Create the main UI
+        self.create_widgets()
 
-        tk.Label(root, text="Output Excel File:").grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        self.output_entry = tk.Entry(root, width=80)
-        self.output_entry.grid(row=1, column=1, padx=10, pady=5)
-        tk.Button(root, text="Browse", command=self.browse_output, bg="green", width=10).grid(row=1, column=2, padx=10, pady=5)
+        # Try to set icon (handle gracefully if not found)
+        try:
+            self.icon = tk.PhotoImage(file="./images/browser_chromium_icon.png")
+            self.root.iconphoto(False, self.icon)
+        except:
+            pass  # Continue without icon if file not found
 
-        tk.Button(root, text="Run Parser", command=self.run_parser, bg="green", width=20).grid(row=2, column=1, pady=20)
+    def setup_styles(self):
+        """Configure modern styling for the application"""
+        self.style = ttk.Style()
 
-        # Status Window
-        tk.Label(root, text="Status:").grid(row=3, column=0, sticky="nw", padx=10, pady=5)
-        self.status_text = tk.Text(root, height=20, width=70, state="disabled", bg="black", fg="white")
-        self.status_text.grid(row=3, column=1, columnspan=2, padx=20, pady=20)
+        # Configure styles for different widgets
+        self.style.configure('Title.TLabel',
+                             font=('Segoe UI', 16, 'bold'),
+                             background='#f0f0f0',
+                             foreground='#2c3e50')
 
-        tk.Button(root, text="Exit", width=10, command=root.destroy, bg="red").grid(row=2, column=2, padx=10, pady=5)
+        self.style.configure('Section.TLabel',
+                             font=('Segoe UI', 12, 'bold'),
+                             background='#f0f0f0',
+                             foreground='#34495e')
+
+        self.style.configure('Modern.TButton',
+                             padding=(10, 5),
+                             font=('Segoe UI', 10))
+
+        self.style.configure('Action.TButton',
+                             padding=(15, 8),
+                             font=('Segoe UI', 11, 'bold'))
+
+        # Progress bar styling - simplified for compatibility
+        try:
+            self.style.configure('Vertical.TProgressbar',
+                                 thickness=20)
+        except:
+            pass  # Use default styling if custom styling fails
+
+    def setup_artifact_selection(self):
+        """Initialize artifact selection options"""
+        self.artifacts_config = {
+            'History': {'enabled': True, 'query': 'History'},
+            'History Gaps': {'enabled': True, 'query': 'History Gaps'},
+            'Downloads': {'enabled': True, 'query': 'Downloads'},
+            'Downloads Gaps': {'enabled': True, 'query': 'Downloads Gaps'},
+            'Autofill': {'enabled': True, 'query': 'Autofill'},
+            'Addresses': {'enabled': True, 'query': 'Addresses'},
+            'Keywords': {'enabled': True, 'query': 'Keywords'},
+            'Credit Cards': {'enabled': True, 'query': 'Credit Cards'},
+            'Bank Accounts': {'enabled': True, 'query': 'Bank Accounts'},
+            'Login Data': {'enabled': True, 'query': 'Login Data'},
+            'Login Data Gaps': {'enabled': True, 'query': 'Login Data Gaps'},
+            'Shortcuts': {'enabled': True, 'query': 'Shortcuts'},
+            'Top Sites': {'enabled': True, 'query': 'Top Sites'},
+            'Cookies': {'enabled': True, 'query': 'Cookies'},
+            'FavIcons': {'enabled': True, 'query': 'FavIcons'},
+            'Search Terms': {'enabled': True, 'query': 'Search Terms'},
+            'Bookmarks': {'enabled': True, 'query': 'Bookmarks'},
+            'Preferences': {'enabled': True, 'query': 'Preferences'},
+            'Web Assist (Edge)': {'enabled': False, 'query': 'Web Assist'}
+        }
+
+        # Create BooleanVar for each artifact
+        for artifact in self.artifacts_config:
+            self.artifact_vars[artifact] = tk.BooleanVar(
+                value=self.artifacts_config[artifact]['enabled']
+            )
+
+    def create_widgets(self):
+        """Create and arrange all GUI widgets"""
+        # Main container with padding
+        main_frame = ttk.Frame(self.root, padding="15")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+
+        # Configure grid weights for responsive design
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        main_frame.rowconfigure(4, weight=1)  # Make status section expandable
+
+        # Title
+        title_label = ttk.Label(main_frame, text="🌐 Chromium Browser Parser",
+                                style='Title.TLabel')
+        title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
+
+        # File paths section (rows 1-4)
+        self.create_file_paths_section(main_frame, 1)
+
+        # Artifact selection section (rows 5-8)
+        self.create_artifact_selection_section(main_frame, 5)
+
+        # Progress and action section (row 9)
+        self.create_progress_section(main_frame, 9)
+
+        # Status section (row 10)
+        self.create_status_section(main_frame, 10)
+
+    def create_file_paths_section(self, parent, row):
+        """Create the file paths input section"""
+        # Profile path
+        ttk.Label(parent, text="Chrome User Profile Folder:",
+                  style='Section.TLabel').grid(row=row, column=0, sticky="w", pady=(0, 10))
+
+        profile_frame = ttk.Frame(parent)
+        profile_frame.grid(row=row, column=1, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        profile_frame.columnconfigure(0, weight=1)
+
+        self.profile_entry = ttk.Entry(profile_frame, font=('Segoe UI', 10))
+        self.profile_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+
+        ttk.Button(profile_frame, text="📁 Browse", command=self.browse_profile,
+                   style='Modern.TButton').grid(row=0, column=1)
+
+        # Output path
+        ttk.Label(parent, text="Output Excel File:",
+                  style='Section.TLabel').grid(row=row + 1, column=0, sticky="w", pady=(0, 20))
+
+        output_frame = ttk.Frame(parent)
+        output_frame.grid(row=row + 1, column=1, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
+        output_frame.columnconfigure(0, weight=1)
+
+        self.output_entry = ttk.Entry(output_frame, font=('Segoe UI', 10))
+        self.output_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+
+        ttk.Button(output_frame, text="💾 Save As", command=self.browse_output,
+                   style='Modern.TButton').grid(row=0, column=1)
+
+    def create_artifact_selection_section(self, parent, row):
+        """Create the artifact selection checkboxes"""
+        # Section title with more spacing
+        ttk.Label(parent, text="Select Artifacts to Process:",
+                  style='Section.TLabel').grid(row=row, column=0, columnspan=3, sticky="w", pady=(20, 10))
+
+        # Create scrollable frame for artifacts with fixed height
+        artifact_frame = ttk.Frame(parent)
+        artifact_frame.grid(row=row + 1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        artifact_frame.columnconfigure(0, weight=1)
+
+        canvas = tk.Canvas(artifact_frame, height=120, bg='white', highlightthickness=1,
+                           highlightbackground='#bdc3c7')
+        scrollbar = ttk.Scrollbar(artifact_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+
+        # Add checkboxes in a grid layout (3 columns)
+        artifacts = list(self.artifacts_config.keys())
+        for i, artifact in enumerate(artifacts):
+            row_pos = i // 5
+            col_pos = i % 5
+
+            cb = ttk.Checkbutton(scrollable_frame, text=artifact,
+                                 variable=self.artifact_vars[artifact],
+                                 padding=(5, 2))
+            cb.grid(row=row_pos, column=col_pos, sticky="w", padx=10, pady=2)
+
+        # Select/Deselect all buttons
+        button_frame = ttk.Frame(parent)
+        button_frame.grid(row=row + 2, column=0, columnspan=3, pady=(10, 20))
+
+        ttk.Button(button_frame, text="✓ Select All",
+                   command=self.select_all_artifacts,
+                   style='Modern.TButton').grid(row=0, column=0, padx=(0, 10))
+
+        ttk.Button(button_frame, text="✗ Deselect All",
+                   command=self.deselect_all_artifacts,
+                   style='Modern.TButton').grid(row=0, column=1)
+
+    def create_progress_section(self, parent, row):
+        """Create the progress bar and action buttons section"""
+        # Add a separator line
+        separator = ttk.Separator(parent, orient='horizontal')
+        separator.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 10))
+
+        progress_frame = ttk.Frame(parent)
+        progress_frame.grid(row=row + 1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 20))
+        progress_frame.columnconfigure(1, weight=1)
+
+        # Vertical progress bar
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(progress_frame,
+                                            orient='vertical',
+                                            mode='determinate',
+                                            variable=self.progress_var,
+                                            style='Vertical.TProgressbar')
+        self.progress_bar.grid(row=0, column=0, rowspan=2, sticky=(tk.N, tk.S),
+                               padx=(0, 20), pady=5)
+        self.progress_bar.configure(length=100)
+
+        # Progress label
+        self.progress_label = ttk.Label(progress_frame, text="Ready to process",
+                                        font=('Segoe UI', 10, 'italic'))
+        self.progress_label.grid(row=0, column=1, sticky="w", pady=(0, 5))
+
+        # Action buttons
+        button_container = ttk.Frame(progress_frame)
+        button_container.grid(row=1, column=1, sticky="w")
+
+        self.run_button = ttk.Button(button_container, text="🚀 Run Parser",
+                                     command=self.run_parser_threaded,
+                                     style='Action.TButton')
+        self.run_button.grid(row=0, column=0, padx=(0, 10))
+
+        self.stop_button = ttk.Button(button_container, text="⏹ Stop",
+                                      command=self.stop_processing,
+                                      style='Action.TButton',
+                                      state='disabled')
+        self.stop_button.grid(row=0, column=1, padx=(0, 10))
+
+        ttk.Button(button_container, text="❌ Exit",
+                   command=self.root.destroy,
+                   style='Action.TButton').grid(row=0, column=2)
+
+    def create_status_section(self, parent, row):
+        """Create the status display section"""
+        # Add another separator line
+        separator2 = ttk.Separator(parent, orient='horizontal')
+        separator2.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 10))
+
+        ttk.Label(parent, text="Processing Status:",
+                  style='Section.TLabel').grid(row=row + 1, column=0, columnspan=3, sticky="w", pady=(10, 5))
+
+        status_frame = ttk.Frame(parent)
+        status_frame.grid(row=row + 2, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        status_frame.columnconfigure(0, weight=1)
+        status_frame.rowconfigure(0, weight=1)
+
+        # Status text with scrollbar
+        self.status_text = tk.Text(status_frame, height=12, width=80,
+                                   font=('Consolas', 9),
+                                   bg='#2c3e50', fg='#ecf0f1',
+                                   selectbackground='#34495e',
+                                   wrap=tk.WORD,
+                                   state="disabled")
+
+        status_scrollbar = ttk.Scrollbar(status_frame, orient="vertical",
+                                         command=self.status_text.yview)
+        self.status_text.configure(yscrollcommand=status_scrollbar.set)
+
+        self.status_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        status_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+
+        # Initial welcome message
+        self.update_status("Welcome to Chromium Browser Parser!")
+        self.update_status("Select your Chrome profile folder and output file, then click 'Run Parser'.")
+
+    def select_all_artifacts(self):
+        """Select all artifact checkboxes"""
+        for var in self.artifact_vars.values():
+            var.set(True)
+
+    def deselect_all_artifacts(self):
+        """Deselect all artifact checkboxes"""
+        for var in self.artifact_vars.values():
+            var.set(False)
 
     def update_status(self, message):
+        """Update the status text display"""
         self.status_text.config(state="normal")
-        self.status_text.insert(tk.END, message + "\n")
+        self.status_text.insert(tk.END, f"[{self.get_timestamp()}] {message}\n")
         self.status_text.see(tk.END)
         self.status_text.config(state="disabled")
-        root.update()
+        self.root.update_idletasks()
+
+    def get_timestamp(self):
+        """Get current timestamp for status messages"""
+        import datetime
+        return datetime.datetime.now().strftime("%H:%M:%S")
+
+    def update_progress(self, current, total, message=""):
+        """Update the progress bar and label"""
+        if total > 0:
+            percentage = (current / total) * 100
+            self.progress_var.set(percentage)
+            if message:
+                self.progress_label.config(text=f"{message} ({current}/{total})")
+            else:
+                self.progress_label.config(text=f"Processing... {current}/{total} ({percentage:.1f}%)")
+        else:
+            self.progress_var.set(0)
+            self.progress_label.config(text=message or "Ready to process")
+        self.root.update_idletasks()
 
     def browse_profile(self):
-        self.profile_path = filedialog.askdirectory(title="Select Chrome User Profile Folder")
-        self.profile_entry.delete(0, tk.END)
-        self.profile_entry.insert(0, self.profile_path)
+        """Open file dialog to select Chrome profile folder"""
+        self.profile_path = filedialog.askdirectory(
+            title="Select Chrome User Profile Folder",
+            mustexist=True
+        )
+        if self.profile_path:
+            self.profile_entry.delete(0, tk.END)
+            self.profile_entry.insert(0, self.profile_path)
+            self.update_status(f"Selected profile: {self.profile_path}")
 
     def browse_output(self):
+        """Open file dialog to select output Excel file"""
         self.output_path = filedialog.asksaveasfilename(
-            title="Select Output Excel File", defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")]
+            title="Select Output Excel File",
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")]
         )
-        self.output_entry.delete(0, tk.END)
-        self.output_entry.insert(0, self.output_path)
+        if self.output_path:
+            self.output_entry.delete(0, tk.END)
+            self.output_entry.insert(0, self.output_path)
+            self.update_status(f"Output file: {self.output_path}")
 
-    def run_parser(self):
+    def run_parser_threaded(self):
+        """Run the parser in a separate thread to prevent UI freezing"""
+        if self.is_processing:
+            return
+
+        # Validate inputs
+        self.profile_path = self.profile_entry.get().strip()
+        self.output_path = self.output_entry.get().strip()
+
         if not self.profile_path or not self.output_path:
             messagebox.showerror("Error", "Please select both profile and output paths.")
             return
 
-        chromium_queries = {
-            'History': [f'{self.profile_path}/History', chrome_history],
-            "History Gaps": [f'{self.profile_path}/History', chrome_history_gaps],
-            "Downloads": [f'{self.profile_path}/History', chrome_downloads],
-            "Downloads Gaps": [f'{self.profile_path}/History', chrome_downloads_gaps],
-            "Autofill": [f'{self.profile_path}/Web Data', chrome_autofill],
-            "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
-            "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
-            "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
-            "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
-            "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
-            "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],
-            "Shortcuts": [f'{self.profile_path}/Shortcuts', chrome_shortcuts],
-            "Top Sites": [f'{self.profile_path}/Top Sites', chrome_topsites],
-            "Cookies": [f'{self.profile_path}/Network/Cookies', chrome_cookies],
-            "FavIcons": [f'{self.profile_path}/Favicons', chrome_favicons]
-        }
+        # Check if any artifacts are selected
+        selected_artifacts = [name for name, var in self.artifact_vars.items() if var.get()]
+        if not selected_artifacts:
+            messagebox.showerror("Error", "Please select at least one artifact to process.")
+            return
 
-        edge_queries = {
-            "Web Assist": [f'{self.profile_path}/WebAssistDatabase', edge_webassist]
-        }
+        # Start processing in separate thread
+        self.is_processing = True
+        self.run_button.config(state='disabled')
+        self.stop_button.config(state='normal')
 
-        record_counts = []
+        self.processing_thread = threading.Thread(target=self.run_parser)
+        self.processing_thread.daemon = True
+        self.processing_thread.start()
 
-        for sqlite_query in chromium_queries.keys():  # queries for all Chromium based browsers
-            self.update_status(f"Processing {sqlite_query}...")
+    def stop_processing(self):
+        """Stop the current processing (note: this is a basic implementation)"""
+        self.is_processing = False
+        self.update_status("Processing stopped by user.")
+        self.run_button.config(state='normal')
+        self.stop_button.config(state='disabled')
+        self.update_progress(0, 1, "Stopped")
 
-            try:
-                df, ws = self.get_dataframes(chromium_queries[sqlite_query][0], chromium_queries[sqlite_query][1])
-                write_excel(df, ws, self.output_path)
-                record_counts.append((ws, len(df)))
-            except Exception as error:
-                self.update_status(f'Failed to process {sqlite_query}...')
-                record_counts.append((sqlite_query, 0))
-                if "database is locked" in str(error):
-                    print(f'Error! {chromium_queries[sqlite_query][0]} is locked')
-                    self.update_status(f'Error! {chromium_queries[sqlite_query][0]} is locked')
+    def run_parser(self):
+        """Main parser logic with progress tracking"""
+        try:
+            # Get selected artifacts
+            selected_artifacts = [name for name, var in self.artifact_vars.items() if var.get()]
+            total_artifacts = len(selected_artifacts)
+            current_artifact = 0
 
-        browser = "Chrome"
-        if "edge" in self.profile_path.lower():  # MS Edge Browser
-            browser = "Edge"
-            for sqlite_query in edge_queries.keys():
-                self.update_status(f"Processing {sqlite_query}...")
+            self.update_status(f"Starting to process {total_artifacts} selected artifacts...")
+            self.update_progress(0, total_artifacts, "Initializing...")
+
+            # Define query mappings
+            chromium_queries = {
+                'History': [f'{self.profile_path}/History', chrome_history],
+                "History Gaps": [f'{self.profile_path}/History', chrome_history_gaps],
+                "Downloads": [f'{self.profile_path}/History', chrome_downloads],
+                "Downloads Gaps": [f'{self.profile_path}/History', chrome_downloads_gaps],
+                "Autofill": [f'{self.profile_path}/Web Data', chrome_autofill],
+                "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
+                "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
+                "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
+                "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
+                "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
+                "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],
+                "Shortcuts": [f'{self.profile_path}/Shortcuts', chrome_shortcuts],
+                "Top Sites": [f'{self.profile_path}/Top Sites', chrome_topsites],
+                "Cookies": [f'{self.profile_path}/Network/Cookies', chrome_cookies],
+                "FavIcons": [f'{self.profile_path}/Favicons', chrome_favicons]
+            }
+
+            edge_queries = {
+                "Web Assist (Edge)": [f'{self.profile_path}/WebAssistDatabase', edge_webassist]
+            }
+
+            record_counts = []
+
+            # Process SQLite-based artifacts
+            for artifact_name in selected_artifacts:
+                if not self.is_processing:
+                    break
+
+                current_artifact += 1
+                self.update_progress(current_artifact, total_artifacts, f"Processing {artifact_name}")
+                self.update_status(f"Processing {artifact_name}...")
 
                 try:
-                    df, ws = self.get_dataframes(edge_queries[sqlite_query][0], edge_queries[sqlite_query][1])
-                    write_excel(df, ws, self.output_path)
-                    record_counts.append((ws, len(df)))
+                    # Check if it's a chromium or edge query
+                    if artifact_name in chromium_queries:
+                        df, ws = self.get_dataframes(
+                            chromium_queries[artifact_name][0],
+                            chromium_queries[artifact_name][1]
+                        )
+                        write_excel(df, ws, self.output_path)
+                        record_counts.append((ws, len(df)))
+                        self.update_status(f"✓ {artifact_name}: {len(df)} records processed")
+
+                    elif artifact_name in edge_queries:
+                        df, ws = self.get_dataframes(
+                            edge_queries[artifact_name][0],
+                            edge_queries[artifact_name][1]
+                        )
+                        write_excel(df, ws, self.output_path)
+                        record_counts.append((ws, len(df)))
+                        self.update_status(f"✓ {artifact_name}: {len(df)} records processed")
+
+                    # Handle special cases
+                    elif artifact_name == "Search Terms":
+                        dataframe_searchterms, ws = self.process_search_terms()
+                        write_excel(dataframe_searchterms, ws, self.output_path)
+                        record_counts.append((ws, len(dataframe_searchterms)))
+                        self.update_status(f"✓ Search Terms: {len(dataframe_searchterms)} records processed")
+
+                    elif artifact_name == "Bookmarks":
+                        bookmarks_df, ws = self.process_bookmarks()
+                        write_excel(bookmarks_df, ws, self.output_path)
+                        record_counts.append((ws, len(bookmarks_df)))
+                        self.update_status(f"✓ Bookmarks: {len(bookmarks_df)} records processed")
+
+                    elif artifact_name == "Preferences":
+                        self.process_preferences()
+                        self.update_status(f"✓ Preferences processed")
+
                 except Exception as error:
-                    self.update_status(f'Failed to process {sqlite_query}...')
-                    record_counts.append((sqlite_query, 0))
+                    self.update_status(f"❌ Failed to process {artifact_name}")
+                    record_counts.append((artifact_name, 0))
                     if "database is locked" in str(error):
-                        print(f'Error! {edge_queries[sqlite_query][0]} is locked')
-                        self.update_status(f'Error! {edge_queries[sqlite_query][0]} is locked')
+                        self.update_status(f"   Database file is locked. Close the browser and try again.")
 
-        self.update_status("Processing Search Terms...")
-        try:
-            dataframe_searchterms, ws = self.process_search_terms()
-            write_excel(dataframe_searchterms, ws, self.output_path)
-            record_counts.append((ws, len(dataframe_searchterms)))
-        except:
-            self.update_status("Failed to process Search Terms...")
-            record_counts.append(('Search Terms', 0))
+            if self.is_processing:
+                # Create summary
+                self.update_status("Creating summary worksheet...")
+                summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
+                write_excel(summary_df, "Summary", self.output_path)
 
-        self.update_status("Processing Bookmarks...")
-        ws = 'Bookmarks'  # assigning in case it does not get assigned in try/except
-        try:
-            bookmarks_df, ws = get_chromium_bookmarks(f'{self.profile_path}/Bookmarks')
-        except:
-            self.update_status("Failed to process Bookmarks...")
-            bookmarks_df = pd.DataFrame()  # empty dataframe
-        try:
-            bookmarks_backup_df, ws_bak = get_chromium_bookmarks(f'{self.profile_path}/Bookmarks.bak')
-        except:
-            self.update_status("Failed to process Bookmarks.bak...")
-            bookmarks_backup_df = pd.DataFrame()  # empty dataframe
+                # Reorganize workbook
+                self.update_status("Organizing worksheets...")
+                self.reorganize_workbook()
 
-        all_bookmarks = pd.concat([bookmarks_df, bookmarks_backup_df], ignore_index=True)
-        write_excel(all_bookmarks, ws, self.output_path)
-        record_counts.append((ws, len(all_bookmarks)))
+                self.update_status("✅ All processing completed successfully!")
+                self.update_status(f"📁 Output saved to: {self.output_path}")
+                self.update_progress(total_artifacts, total_artifacts, "Completed!")
 
-        self.update_status("Processing Preferences...")
-        try:
-            preferences = Preferences(f'{self.profile_path}/Preferences', browser)
-            preferences_output = io.StringIO()
-            print(preferences, file=preferences_output)
-            preferences_data = preferences_output.getvalue().splitlines()
-            preferences_df = pd.DataFrame(preferences_data, columns=["Preferences Output"])
-            write_excel(preferences_df, "Preferences", self.output_path)
-        except:
-            self.update_status("Failed to process Preferences...")
+                # Show completion message
+                messagebox.showinfo("Success",
+                                    f"Processing completed successfully!\n\nOutput saved to:\n{self.output_path}")
+            else:
+                self.update_status("⚠ Processing was stopped by user.")
 
-        self.update_status("Creating Summary Worksheet...")
-        summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
-        write_excel(summary_df, "Summary", self.output_path)
+        except Exception as e:
+            self.update_status(f"❌ Critical error: {str(e)}")
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
-        # Load the workbook
-        self.update_status("Reordering some of the worksheets...")
-        wb = openpyxl.load_workbook(self.output_path)
-
-        # Reorganize some of the worksheets
-        wb.move_sheet(wb["Summary"], -(len(wb.sheetnames)-1))
-
-        if 'Preferences' in wb.sheetnames:
-            wb.move_sheet(wb["Preferences"], -(len(wb.sheetnames)-2))
-
-        if 'Bookmarks' in wb.sheetnames:
-            wb.move_sheet(wb["Bookmarks"], -(len(wb.sheetnames)-7))
-
-        if 'Search Terms' in wb.sheetnames:
-            wb.move_sheet(wb["Search Terms"], -(len(wb.sheetnames)-7))
-
-        # Save the workbook
-        wb.save(self.output_path)
-
-        self.update_status("All processing completed.")
-        self.update_status(f'Output saved to {self.output_path}')
-
-
-#        except Exception as e:
-#            self.update_status(f"Error: {e}")
-#            messagebox.showerror("Error", f"An error occurred: {e}")
+        finally:
+            # Reset UI state
+            self.is_processing = False
+            self.run_button.config(state='normal')
+            self.stop_button.config(state='disabled')
+            if not hasattr(self, 'progress_var') or self.progress_var.get() < 100:
+                self.update_progress(0, 1, "Ready to process")
 
     def get_dataframes(self, db_file, function):
+        """Get dataframes from SQLite database"""
         query, worksheet_name = function()
         conn = sqlite3.connect(db_file)
         dataframe = pd.read_sql_query(query, conn)
@@ -229,6 +547,7 @@ class ChromeParserGUI:
         return dataframe, worksheet_name
 
     def process_search_terms(self):
+        """Process search terms data"""
         worksheet = 'Search Terms'
         input_file = f'{self.profile_path}/History'
         df_history, ws_history = self.get_dataframes(input_file, chrome_keyword_historyquery)
@@ -264,7 +583,70 @@ class ChromeParserGUI:
         ]
         return df_searchterms, worksheet
 
+    def process_bookmarks(self):
+        """Process bookmarks data"""
+        ws = 'Bookmarks'
+        try:
+            bookmarks_df, ws = get_chromium_bookmarks(f'{self.profile_path}/Bookmarks')
+        except:
+            bookmarks_df = pd.DataFrame()
+
+        try:
+            bookmarks_backup_df, ws_bak = get_chromium_bookmarks(f'{self.profile_path}/Bookmarks.bak')
+        except:
+            bookmarks_backup_df = pd.DataFrame()
+
+        all_bookmarks = pd.concat([bookmarks_df, bookmarks_backup_df], ignore_index=True)
+        return all_bookmarks, ws
+
+    def process_preferences(self):
+        """Process preferences data"""
+        browser = "Edge" if "edge" in self.profile_path.lower() else "Chrome"
+        preferences = Preferences(f'{self.profile_path}/Preferences', browser)
+        preferences_output = io.StringIO()
+        print(preferences, file=preferences_output)
+        preferences_data = preferences_output.getvalue().splitlines()
+        preferences_df = pd.DataFrame(preferences_data, columns=["Preferences Output"])
+        write_excel(preferences_df, "Preferences", self.output_path)
+
+    def reorganize_workbook(self):
+        """Reorganize the Excel workbook sheets"""
+        wb = openpyxl.load_workbook(self.output_path)
+
+        # Move important sheets to the front
+        if 'Summary' in wb.sheetnames:
+            wb.move_sheet(wb["Summary"], -(len(wb.sheetnames) - 1))
+
+        if 'Preferences' in wb.sheetnames:
+            wb.move_sheet(wb["Preferences"], -(len(wb.sheetnames) - 2))
+
+        if 'Bookmarks' in wb.sheetnames:
+            wb.move_sheet(wb["Bookmarks"], -(len(wb.sheetnames) - 7))
+
+        if 'Search Terms' in wb.sheetnames:
+            wb.move_sheet(wb["Search Terms"], -(len(wb.sheetnames) - 7))
+
+        wb.save(self.output_path)
+
+
 if __name__ == '__main__':
+    # Create and configure the main window
     root = tk.Tk()
-    app = ChromeParserGUI(root)
+    app = ModernChromeParserGUI(root)
+
+    # Make the window resizable
+    root.resizable(True, True)
+
+    # Set minimum window size
+    root.minsize(900, 650)
+
+    # Center the window on screen
+    root.update_idletasks()
+    width = root.winfo_width()
+    height = root.winfo_height()
+    x = (root.winfo_screenwidth() // 2) - (width // 2)
+    y = (root.winfo_screenheight() // 2) - (height // 2)
+    root.geometry(f'{width}x{height}+{x}+{y}')
+
+    # Start the application
     root.mainloop()
