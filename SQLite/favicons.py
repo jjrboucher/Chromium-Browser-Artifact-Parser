@@ -4,7 +4,7 @@ def chrome_favicons():
     worksheet = 'FavIcons'
     sql_query = """
             /*
-            Last updated 2024-09-25
+            Last updated 2025-05-06
             Author: Jacques Boucher - jjrboucher@gmail.com
             Tested with:  Chrome 129
             */
@@ -32,15 +32,15 @@ def chrome_favicons():
             https://source.chromium.org/chromium/chromium/src/+/main:components/favicon/core/favicon_database.cc?q
             =icon_type%3D&ss=chromium 
             (lines 37-82) 
-            */
+            */          
             
-            
-            SELECT  favicons.id, 
-                    icon_mapping.page_url AS 'page URL', 
-                    favicons.url  AS 'favicon URL', 
-                    favicon_bitmaps.image_data, 
-                    (favicon_bitmaps.height || " X " || favicon_bitmaps.width) AS "icon dimensions", 
-                    favicons.icon_type,
+			SELECT  
+					icon_mapping.id AS 'icon_mapping.id',
+					icon_mapping.page_url AS 'page URL', 
+					favicons.url  AS 'favicon URL', 
+					favicon_bitmaps.image_data, 
+					(favicon_bitmaps.height || " X " || favicon_bitmaps.width) AS "icon dimensions", 
+					favicons.icon_type,
                     
                     /* REF: 
                     https://source.chromium.org/chromium/chromium/src/+/main:out/android-Debug/gen/components/favicon/
@@ -68,9 +68,11 @@ def chrome_favicons():
                         ELSE datetime(favicon_bitmaps.last_requested/1000000-11644473600,'unixepoch')
                     END AS 'Decoded last_requested (UTC)'
             
-            FROM 	favicons
-                    LEFT JOIN favicon_bitmaps ON favicon_bitmaps.icon_id == favicons.id
-                    LEFT JOIN icon_mapping ON icon_mapping.icon_id == favicons.id
+            FROM 	icon_mapping
+                    LEFT JOIN favicons ON favicons.id == icon_mapping.icon_id
+					LEFT JOIN favicon_bitmaps ON favicon_bitmaps.icon_id == favicons.id
+					
+			ORDER BY page_url
         """
 
     return sql_query, worksheet

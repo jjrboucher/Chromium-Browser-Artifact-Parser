@@ -2,7 +2,7 @@ def chrome_login_data():
     worksheet = "Login Data"
     sql_query = """
         /*
-        Last updated 2023-01-13
+        Last updated 2025-04-29
         Author: Jacques Boucher - jjrboucher@gmail.com
         Tested on Chrome v.108 and Edge v.101
         */
@@ -12,10 +12,10 @@ def chrome_login_data():
         Runs against the Login Data SQLite file
         */
         
-        SELECT signon_realm,
+        SELECT id,
+            signon_realm,
             origin_url,
             action_url,
-            signon_realm,
             username_value,
             display_name,
             username_element,
@@ -83,7 +83,7 @@ def chrome_login_data():
         
         FROM logins
         
-        ORDER by times_used DESC
+        ORDER by date_created
     """
 
     return sql_query, worksheet
