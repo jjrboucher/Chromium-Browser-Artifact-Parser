@@ -617,7 +617,6 @@ class ModernChromeParserGUI:
         # Move important sheets to the front
         if 'Summary' in wb.sheetnames:
             current_index = wb.sheetnames.index(wb["Summary"].title)
-            print(f'Current index for summary: {current_index}')
             wb.move_sheet(wb["Summary"], -current_index)
 
         if 'Preferences' in wb.sheetnames:
