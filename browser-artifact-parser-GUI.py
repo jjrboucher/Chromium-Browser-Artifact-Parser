@@ -91,11 +91,11 @@ class ModernChromeParserGUI:
                              foreground='#34495e')
 
         self.style.configure('Modern.TButton',
-                             padding=(10, 5),
+                             padding=(6, 2),
                              font=('Segoe UI', 10))
 
         self.style.configure('Action.TButton',
-                             padding=(15, 8),
+                             padding=(8, 4),
                              font=('Segoe UI', 11, 'bold'))
 
         # Progress bar styling - simplified for compatibility
@@ -145,24 +145,24 @@ class ModernChromeParserGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(4, weight=1)  # Make status section expandable
+        main_frame.rowconfigure(10, weight=1)  # Make status section expandable
 
         # Title
         title_label = ttk.Label(main_frame, text="🌐 Chromium Browser Parser",
                                 style='Title.TLabel')
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
 
-        # File paths section (rows 1-4)
+        # File paths section (rows 1-2)
         self.create_file_paths_section(main_frame, 1)
 
-        # Artifact selection section (rows 5-8)
-        self.create_artifact_selection_section(main_frame, 5)
+        # Artifact selection section (row 3-5)
+        self.create_artifact_selection_section(main_frame, 3)
 
-        # Progress and action section (row 9)
-        self.create_progress_section(main_frame, 9)
+        # Progress and action section (row 6-7)
+        self.create_progress_section(main_frame, 6)
 
-        # Status section (row 10)
-        self.create_status_section(main_frame, 10)
+        # Status section (row 8-9)
+        self.create_status_section(main_frame, 8)
 
     def create_file_paths_section(self, parent, row):
         """Create the file paths input section"""
@@ -182,10 +182,10 @@ class ModernChromeParserGUI:
 
         # Output path
         ttk.Label(parent, text="Output Excel File:",
-                  style='Section.TLabel').grid(row=row + 1, column=0, sticky="w", pady=(0, 20))
+                  style='Section.TLabel').grid(row=row + 1, column=0, sticky="w", pady=(0, 5))
 
         output_frame = ttk.Frame(parent)
-        output_frame.grid(row=row + 1, column=1, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
+        output_frame.grid(row=row + 1, column=1, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 5))
         output_frame.columnconfigure(0, weight=1)
 
         self.output_entry = ttk.Entry(output_frame, font=('Segoe UI', 10))
@@ -196,18 +196,20 @@ class ModernChromeParserGUI:
 
     def create_artifact_selection_section(self, parent, row):
         """Create the artifact selection checkboxes"""
-        # Section title with more spacing
+        # Section title with appropriate spacing
         ttk.Label(parent, text="Select Artifacts to Process:",
-                  style='Section.TLabel').grid(row=row, column=0, columnspan=3, sticky="w", pady=(20, 10))
+                  style='Section.TLabel').grid(row=row, column=0, columnspan=3, sticky="w", pady=(0, 5))
 
         # Create scrollable frame for artifacts with fixed height
         artifact_frame = ttk.Frame(parent)
-        artifact_frame.grid(row=row + 1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        artifact_frame.grid(row=row + 1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 5))
         artifact_frame.columnconfigure(0, weight=1)
 
-        canvas = tk.Canvas(artifact_frame, height=120, bg='white', highlightthickness=1,
+        canvas = tk.Canvas(artifact_frame, height=100, bg='white', highlightthickness=1,
                            highlightbackground='#bdc3c7')
         scrollbar = ttk.Scrollbar(artifact_frame, orient="vertical", command=canvas.yview)
+
+
         scrollable_frame = ttk.Frame(canvas)
 
         scrollable_frame.bind(
@@ -218,10 +220,10 @@ class ModernChromeParserGUI:
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.grid(row=0, column=0, sticky=(tk.W, tk.E))
-        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        canvas.grid(row=0, column=0, sticky=("nsew")) # tk.W, tk.E
+        scrollbar.grid(row=0, column=1, sticky=("ns")) # tk.N, tk.S
 
-        # Add checkboxes in a grid layout (3 columns)
+        # Add checkboxes in a grid layout (5 columns)
         artifacts = list(self.artifacts_config.keys())
         for i, artifact in enumerate(artifacts):
             row_pos = i // 5
@@ -230,11 +232,11 @@ class ModernChromeParserGUI:
             cb = ttk.Checkbutton(scrollable_frame, text=artifact,
                                  variable=self.artifact_vars[artifact],
                                  padding=(5, 2))
-            cb.grid(row=row_pos, column=col_pos, sticky="w", padx=10, pady=2)
+            cb.grid(row=row_pos, column=col_pos, sticky="w", padx=10, pady=0)
 
         # Select/Deselect all buttons
         button_frame = ttk.Frame(parent)
-        button_frame.grid(row=row + 2, column=0, columnspan=3, pady=(10, 20))
+        button_frame.grid(row=row + 2, column=0, columnspan=3, pady=(0, 0))
 
         ttk.Button(button_frame, text="✓ Select All",
                    command=self.select_all_artifacts,
@@ -248,22 +250,22 @@ class ModernChromeParserGUI:
         """Create the progress bar and action buttons section"""
         # Add a separator line
         separator = ttk.Separator(parent, orient='horizontal')
-        separator.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 10))
+        separator.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(5, 5))
 
         progress_frame = ttk.Frame(parent)
-        progress_frame.grid(row=row + 1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 20))
+        progress_frame.grid(row=row + 1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(5, 10))
         progress_frame.columnconfigure(1, weight=1)
 
         # Vertical progress bar
         self.progress_var = tk.DoubleVar()
         self.progress_bar = ttk.Progressbar(progress_frame,
-                                            orient='vertical',
+                                            orient='horizontal',
                                             mode='determinate',
                                             variable=self.progress_var,
-                                            style='Vertical.TProgressbar')
-        self.progress_bar.grid(row=0, column=0, rowspan=2, sticky=(tk.N, tk.S),
-                               padx=(0, 20), pady=5)
-        self.progress_bar.configure(length=100)
+                                            style='Horizontal.TProgressbar')
+        self.progress_bar.grid(row=0, column=2, columnspan=3, sticky=(tk.N, tk.S),
+                               padx=(0, 20), pady=2)
+        self.progress_bar.configure(length=400)
 
         # Progress label
         self.progress_label = ttk.Label(progress_frame, text="Ready to process",
@@ -272,7 +274,7 @@ class ModernChromeParserGUI:
 
         # Action buttons
         button_container = ttk.Frame(progress_frame)
-        button_container.grid(row=1, column=1, sticky="w")
+        button_container.grid(row=0, column=1, sticky="w")
 
         self.run_button = ttk.Button(button_container, text="🚀 Run Parser",
                                      command=self.run_parser_threaded,
@@ -291,9 +293,6 @@ class ModernChromeParserGUI:
 
     def create_status_section(self, parent, row):
         """Create the status display section"""
-        # Add another separator line
-        separator2 = ttk.Separator(parent, orient='horizontal')
-        separator2.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 10))
 
         ttk.Label(parent, text="Processing Status:",
                   style='Section.TLabel').grid(row=row + 1, column=0, columnspan=3, sticky="w", pady=(10, 5))
@@ -497,7 +496,8 @@ class ModernChromeParserGUI:
                         self.update_status(f"✓ Bookmarks: {len(bookmarks_df)} records processed")
 
                     elif artifact_name == "Preferences":
-                        self.process_preferences()
+                        temp_record_count = self.process_preferences()
+                        record_counts.append(("Preferences", temp_record_count))
                         self.update_status(f"✓ Preferences processed")
 
                 except Exception as error:
@@ -601,13 +601,14 @@ class ModernChromeParserGUI:
 
     def process_preferences(self):
         """Process preferences data"""
-        browser = "Edge" if "edge" in self.profile_path.lower() else "Chrome"
-        preferences = Preferences(f'{self.profile_path}/Preferences', browser)
+        preferences = Preferences(f'{self.profile_path}/Preferences')
         preferences_output = io.StringIO()
         print(preferences, file=preferences_output)
         preferences_data = preferences_output.getvalue().splitlines()
         preferences_df = pd.DataFrame(preferences_data, columns=["Preferences Output"])
         write_excel(preferences_df, "Preferences", self.output_path)
+        return len(preferences_df)
+
 
     def reorganize_workbook(self):
         """Reorganize the Excel workbook sheets"""
@@ -615,16 +616,13 @@ class ModernChromeParserGUI:
 
         # Move important sheets to the front
         if 'Summary' in wb.sheetnames:
-            wb.move_sheet(wb["Summary"], -(len(wb.sheetnames) - 1))
+            current_index = wb.sheetnames.index(wb["Summary"].title)
+            print(f'Current index for summary: {current_index}')
+            wb.move_sheet(wb["Summary"], -current_index)
 
         if 'Preferences' in wb.sheetnames:
-            wb.move_sheet(wb["Preferences"], -(len(wb.sheetnames) - 2))
-
-        if 'Bookmarks' in wb.sheetnames:
-            wb.move_sheet(wb["Bookmarks"], -(len(wb.sheetnames) - 7))
-
-        if 'Search Terms' in wb.sheetnames:
-            wb.move_sheet(wb["Search Terms"], -(len(wb.sheetnames) - 7))
+            current_index = wb.sheetnames.index(wb["Preferences"].title)
+            wb.move_sheet(wb["Preferences"], -current_index + 1)
 
         wb.save(self.output_path)
 
@@ -638,7 +636,7 @@ if __name__ == '__main__':
     root.resizable(True, True)
 
     # Set minimum window size
-    root.minsize(900, 650)
+    root.minsize(700, 600)
 
     # Center the window on screen
     root.update_idletasks()

@@ -21,5 +21,3 @@ def write_excel(dataframe, worksheet_name, excel_file):
         # Create a new Excel file
         with pd.ExcelWriter(excel_file, engine='openpyxl', mode='w') as writer:
             dataframe.to_excel(writer, sheet_name=worksheet_name, index=False)
-
-    print(f'Query results for worksheet {green}{worksheet_name}{white} saved to Excel file.')
