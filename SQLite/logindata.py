@@ -130,7 +130,7 @@ def chrome_login_data_gaps():
             (
                 SELECT LAG (ROWID,1) OVER (ORDER BY ROWID) AS "Previous Record Number", /*  Gets the previous record to the current one */
                 rowid AS ROWID, /* Current record */
-                (ROWID - (LAG (ROWID,1) OVER (ORDER BY ROWID))-1) AS "Number of Missing Visits", /* Calculates the difference between the previous and current record # */
+                (ROWID - (LAG (ROWID,1) OVER (ORDER BY ROWID))-1) AS "Number of Missing Records", /* Calculates the difference between the previous and current record # */
                 LAG(DATETIME(logins.date_created/1000000-11644473600,'unixepoch'),1) OVER (ORDER BY ROWID) as "Beginning Date Created Timestamp (UTC)", /* Gets the timestamp from the previous record */
                 DATETIME(logins.date_created/1000000-11644473600,'unixepoch') AS "Ending Date Created Timestamp (UTC)" /* Gets the timestamp of the current record */
                 FROM logins
