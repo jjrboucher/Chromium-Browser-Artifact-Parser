@@ -34,7 +34,7 @@ from SQLite.WebData import (
     chrome_keywords,
     chrome_masked_credit_cards,
     chrome_masked_bank_accounts,
-    chrome_addresses
+    chrome_addresses, chrome_loyalty_cards
 )
 from SQLite.webasssist import edge_webassist
 
@@ -117,6 +117,7 @@ class ModernChromeParserGUI:
             'Keywords': {'enabled': True, 'query': 'Keywords'},
             'Credit Cards': {'enabled': True, 'query': 'Credit Cards'},
             'Bank Accounts': {'enabled': True, 'query': 'Bank Accounts'},
+            'Loyalty Cards': {'enabled': True, 'query': 'Loyalty Cards'},
             'Login Data': {'enabled': True, 'query': 'Login Data'},
             'Login Data Gaps': {'enabled': True, 'query': 'Login Data Gaps'},
             'Shortcuts': {'enabled': True, 'query': 'Shortcuts'},
@@ -438,6 +439,7 @@ class ModernChromeParserGUI:
                 "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
                 "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
                 "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
+                "Loyalty Cards": [f'{self.profile_path}/Web Data', chrome_loyalty_cards()],
                 "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
                 "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
                 "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],

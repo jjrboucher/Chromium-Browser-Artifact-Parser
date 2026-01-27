@@ -6,7 +6,7 @@ def chrome_favicons():
             /*
             Last updated 2025-05-06
             Author: Jacques Boucher - jjrboucher@gmail.com
-            Tested with:  Chrome 129
+            Tested with:  Chrome 129, 143
             */
             
             /* 

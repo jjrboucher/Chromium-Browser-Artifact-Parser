@@ -7,7 +7,7 @@ def chrome_history():
         Now includes the field urls.last_visit_time as well as decoded value. Especially useful for entries that have no entry in the visits table.
     
         Author: Jacques Boucher - jjrboucher@gmail.com
-        Tested with:  Chrome 78, but should work fine with 71, as 
+        Tested with:  Chrome 78,143 but should work fine with 71, as 
         the changes to the earlier query are cosmetics (adding a raw field to the output
         and formating an output to a float rather than an integer.
     

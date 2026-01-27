@@ -120,31 +120,65 @@ def chrome_masked_credit_cards():
 
 
 def chrome_masked_bank_accounts():
-    # This query extracts info from the masked_bank_accounts table in Web Data SQLite file.
+    # This query extracts info from the masked_bank_accounts and masked_bank_accounts_metadata tables
+    # in the Web Data SQLite file.
     worksheet = "Bank Accounts"
     sql_query = """
         /*
-        Last modified: 2024-09-24
+        Last modified: 2026-Jan-27
         Author: Jacques Boucher - jjrboucher@gmail.com
-        Tested with: Chrome v. 129
+        Tested with: Chrome v. 143
         */
 
         /*
         Chrome Browser
         Runs against Web Data SQLite file
-        Extracts data from masked_bank_accounts table.
+        Extracts data from masked_bank_accounts and masked_bank_accounts_metadata tables.
         */
 
-        SELECT 	bank_name AS "Bank Name",
-                account_number_suffix AS "Account Number Suffix",
-                account_type AS "Account Type",
-                nickname
+        SELECT 	mba.instrument_id,
+                mba.bank_name AS "Bank Name",
+                mba.account_number_suffix AS "Account Number Suffix",
+                mba.account_type AS "Account Type",
+                mba.nickname,
+				mbam.use_count,
+				mbam.use_date,
+				DATETIME(mbam.use_date/1000000-11644473600,'unixepoch') AS "Decoded use_date (UTC)"
 
-        FROM masked_bank_accounts    
+        FROM masked_bank_accounts AS mba
+		LEFT JOIN masked_bank_accounts_metadata AS mbam ON mba.instrument_id == mbam.instrument_id 
     """
 
     return sql_query, worksheet
 
+def chrome_loyalty_cards():
+    # This query extracts info from the loyalty_cards and loyalty_cards_merchant_domain tables
+    # in the Web Data SQLite file.
+    worksheet = "Loyalty Cards"
+    sql_query = """
+        /*
+        Last modified: 2026-Jan-27
+        Author: Jacques Boucher - jjrboucher@gmail.com
+        Tested with: Chrome v. 143
+        */
+
+        /*
+        Chrome Browser
+        Runs against Web Data SQLite file
+        Extracts data from loyalty_cards and loyalty_card_merchant_domain tables.
+        */
+
+        SELECT 	lc.merchant_name,
+				lcmd.merchant_domain,
+				lc.program_name,
+				lc.program_logo,
+				lc.loyalty_card_number
+
+        FROM loyalty_cards AS lc
+		LEFT JOIN loyalty_card_merchant_domain AS lcmd ON lc.loyalty_card_id == lcmd.loyalty_card_id   
+    """
+
+    return sql_query, worksheet
 
 def autofill_profile():
     # This query does not work with later versions of the browser as the autofill_profile table has been removed.

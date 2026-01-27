@@ -4,7 +4,7 @@ def chrome_downloads():
         /*
         Last updated: 2025-02-22
         Author:  Jacques Boucher - jjrboucher@gmail.com
-        Tested with: Chrome 94
+        Tested with: Chrome 94 and 143
         Only changes from previous query that was tested with Chrome 71 and 78 is that a few
         extra download errors have been added. The previous statement will still work. If it
         sees a value it doesn't recognize, it alerts you of this fact and displays the value.

@@ -9,7 +9,7 @@ def chrome_cookies():
         /*
         Last modified: 2024-09-24
         Author: Jacques Boucher - jjrboucher@gmail.com
-        Tested with: Chrome v. 129
+        Tested with: Chrome v. 143
         */
         
         /*
