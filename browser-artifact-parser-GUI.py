@@ -1,15 +1,6 @@
 # Written by Jacques Boucher (Enhanced UI Version)
 # email: jjrboucher@gmail.com
-# version date: 2025-May-20 (UI Enhanced)
-#
-# Script to extract data from Google Chrome's or MS Edge's SQLite databases
-# Outputs to an Excel file with modern UI and artifact selection
-#
-# tested with Chrome 129, Edge 129, Opera 113
-
-# Written by Jacques Boucher (Enhanced UI Version)
-# email: jjrboucher@gmail.com
-# version date: 2025-Mar-05 (UI Enhanced)
+# version date: 2026-Jan-27 (Added parsing of Loyalty Cards in Web Data)
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file with modern UI and artifact selection
