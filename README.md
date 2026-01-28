@@ -1,6 +1,6 @@
 **IMPORTANT CAVEATS - NOT A FORENSIC TOOL - THIS IS A TRIAGE TOOL**
 
-The script currently opens the DB along with any journaling file. This will be modified in a future release. But doing so can result in a change to the DB if there are pending transactions. If the journal file is 0 bytes in size, there are no pending transactions that will be applied against the DB upon opening it.
+The script currently opens the DB in Read Only mode. Journaling file not processed. Meaning there could be pending transactions in the journaling file that you will not see in the output of this script.
 
 The script also does not look for deleted pages within an SQLite file.
 
