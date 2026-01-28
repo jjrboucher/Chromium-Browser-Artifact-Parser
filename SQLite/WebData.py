@@ -222,7 +222,7 @@ def autofill_profile():
 
 
 def chrome_addresses():
-    # This query extracts info from the masked_credit_cards table in Web Data SQLite file.
+    # This query extracts info from the addresses table in Web Data SQLite file.
     worksheet = "Addresses"
     sql_query = """
                 /*
