@@ -1,3 +1,9 @@
+**IMPORTANT CAVEATS - NOT A FORENSIC TOOL - THIS IS A TRIAGE TOOL**
+
+The script currently opens the DB along with any journaling file. This will be modified in a future release. But doing so can result in a change to the DB if there are pending transactions. If the journal file is 0 bytes in size, there are no pending transactions that will be applied against the DB upon opening it.
+
+The script also does not look for deleted pages within an SQLite file.
+
 **NOTE:** The script was written for and tested against a Chrome profile on a Windows computer. It has been tested against Edge on Windows and works. But it won't work against a mobile Chrome user profile where the SQLite files have a different name (and possibly different structure requiring a different SQLite statement to work correctly?).<br>
 
 **The application will look for the word "edge" (case insensitive) in the path.** If it's present, it will run the Edge specific SQLite statement to parse data in **WebAssistDatabase**. In a future update I hope to rely on the Preferences file to make that determination. The application could simply try to run the SQLite for Edge and skip over it when it can't find the file. But it will result in the summary worksheet showing that there are 0 items for that particular artifact. That could caues confusion given the artifact was not observed in Chrome, only Edge.<br>
