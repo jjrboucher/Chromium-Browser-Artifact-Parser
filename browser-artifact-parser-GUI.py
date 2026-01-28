@@ -1,6 +1,6 @@
 # Written by Jacques Boucher (Enhanced UI Version)
 # email: jjrboucher@gmail.com
-# version date: 2026-Jan-27 (Added parsing of Loyalty Cards in Web Data)
+# version date: 2026-Jan-28 (Added parsing of Loyalty Cards in Web Data)
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file with modern UI and artifact selection
@@ -36,11 +36,12 @@ import numpy as np
 import io
 import threading
 
+__version__ = '2026-Jan-28'
 
 class ModernChromeParserGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chromium Browser Parser - Enhanced Edition")
+        self.root.title(f'Chromium Browser Parser (version date: {__version__})')
         self.root.geometry("1000x750")
         self.root.configure(bg='#f0f0f0')
 
@@ -430,7 +431,7 @@ class ModernChromeParserGUI:
                 "Addresses": [f'{self.profile_path}/Web Data', chrome_addresses],
                 "Keywords": [f'{self.profile_path}/Web Data', chrome_keywords],
                 "Credit Cards": [f'{self.profile_path}/Web Data', chrome_masked_credit_cards],
-                "Loyalty Cards": [f'{self.profile_path}/Web Data', chrome_loyalty_cards()],
+                "Loyalty Cards": [f'{self.profile_path}/Web Data', chrome_loyalty_cards],
                 "Bank Accounts": [f'{self.profile_path}/Web Data', chrome_masked_bank_accounts],
                 "Login Data": [f'{self.profile_path}/Login Data', chrome_login_data],
                 "Login Data Gaps": [f'{self.profile_path}/Login Data', chrome_login_data_gaps],
@@ -503,6 +504,19 @@ class ModernChromeParserGUI:
                 # Create summary
                 self.update_status("Creating summary worksheet...")
                 summary_df = pd.DataFrame(record_counts, columns=["Worksheet Name", "Record Count"])
+
+                #Adding script version to this worksheet
+                version = pd.DataFrame(
+                    [
+                        ["",""],
+                        ["------------------", "---------------"],
+                        ["Script Version:", __version__],
+                    ],
+                    columns=summary_df.columns
+                )
+
+                summary_df = pd.concat([summary_df, version], ignore_index=True)
+
                 write_excel(summary_df, "Summary", self.output_path)
 
                 # Reorganize workbook
@@ -534,7 +548,7 @@ class ModernChromeParserGUI:
     def get_dataframes(self, db_file, function):
         """Get dataframes from SQLite database"""
         query, worksheet_name = function()
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(f'file:{db_file}?immutable=1', uri=True)
         dataframe = pd.read_sql_query(query, conn)
         conn.close()
         return dataframe, worksheet_name
