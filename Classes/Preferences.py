@@ -177,6 +177,25 @@ class Preferences:
 
         return prompt
 
+    def clusters(self):
+        """
+        Clusters keywords
+        """
+        clusters_parsed = ''
+        try:
+            clusters = self.prefs.get("history_clusters").get("all_cache").get("all_keywords")
+        except (KeyError, IndexError, AttributeError, TypeError):
+            clusters = "not found"
+
+        if clusters != "not found":  # meaning there are clusters to parse
+            clusters_parsed = f''
+            for kw in clusters.keys():
+                clusters_parsed = clusters_parsed + (f'     keyword: {kw}\n'
+                                       f'          score: {clusters.get(kw)["score"]}\n'
+                                       f'          type: {clusters.get(kw)["type"]}\n')
+
+        return f'     Nil\n' if clusters_parsed == "" else clusters_parsed
+
     def new_tab(self):
         """
         links you see on a new tab
@@ -191,11 +210,11 @@ class Preferences:
         if mv != "not found":  # meaning there are URLs to parse
             mv_parsed = f''
             for entry in mv:
-                mv_parsed = mv_parsed + (f'     isMostVisited: {entry.get("isMostVisited")},  '
-                                       f'title: {entry.get("title")},  '
-                                       f'url: {entry.get("url")}\n')
+                mv_parsed = mv_parsed + (f'     isMostVisited: {entry.get("isMostVisited")}\n'
+                                       f'          title: {entry.get("title")}\n'
+                                       f'          url: {entry.get("url")}\n')
 
-        return f'     Nil' if mv_parsed == "" else mv_parsed
+        return f'     Nil\n' if mv_parsed == "" else mv_parsed
 
     def startup(self):
         """
@@ -328,7 +347,9 @@ class Preferences:
                 f'Is homepage a new tab? {self.homepagenewtab()}\n'
                 f'Startup value: {self.startup()}\n'
                 f'URL startup list: {self.startup_urls()}\n'
-                f'\nThe following are shortcuts that appear on a new tab:\n'
+                f'\nKeyword clusters:\n'
+                f'{self.clusters()}\n'
+                f'The following are shortcuts that appear on a new tab:\n'
                 f'{self.new_tab()}')
 
         return preferences
