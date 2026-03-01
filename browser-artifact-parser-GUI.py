@@ -1,11 +1,12 @@
 # Written by Jacques Boucher (Enhanced UI Version)
 # email: jjrboucher@gmail.com
 # version date: 2026-Jan-28 (Added parsing of Loyalty Cards in Web Data)
+# version date: 2026-Mar-1 (now parses the cluster tables in the History file)
 #
 # Script to extract data from Google Chrome's or MS Edge's SQLite databases
 # Outputs to an Excel file with modern UI and artifact selection
 #
-# tested with Chrome 129, Edge 129, Opera 113
+# tested with Chrome 129, 145, Edge 129, Opera 113
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, font
@@ -15,7 +16,10 @@ from JSON.bookmarks import get_chromium_bookmarks
 from SQLite.cookies import chrome_cookies
 from SQLite.downloads import chrome_downloads, chrome_downloads_gaps
 from SQLite.favicons import chrome_favicons
-from SQLite.history import chrome_history, chrome_history_gaps
+from SQLite.history import (chrome_history, chrome_history_gaps, chrome_history_clusters_overview,
+                            chrome_history_clusters_contents, chrome_history_clusters_search_term,
+                            chrome_history_clusters_timeline, chrome_history_clusters_duplicate_visits,
+                            chrome_history_clusters_comprehensive_export)
 from SQLite.logindata import chrome_login_data, chrome_login_data_gaps
 from SQLite.searchterms import chrome_keyword_historyquery
 from SQLite.shortcuts import chrome_shortcuts
@@ -36,7 +40,7 @@ import numpy as np
 import io
 import threading
 
-__version__ = '2026-Jan-28'
+__version__ = '2026-Mar-1'
 
 class ModernChromeParserGUI:
     def __init__(self, root):
@@ -102,6 +106,7 @@ class ModernChromeParserGUI:
         self.artifacts_config = {
             'History': {'enabled': True, 'query': 'History'},
             'History Gaps': {'enabled': True, 'query': 'History Gaps'},
+            'History Clusters': {'enabled': True, 'query': 'History Clusters'},
             'Downloads': {'enabled': True, 'query': 'Downloads'},
             'Downloads Gaps': {'enabled': True, 'query': 'Downloads Gaps'},
             'Autofill': {'enabled': True, 'query': 'Autofill'},
@@ -423,7 +428,7 @@ class ModernChromeParserGUI:
 
             # Define query mappings
             chromium_queries = {
-                'History': [f'{self.profile_path}/History', chrome_history],
+                "History": [f'{self.profile_path}/History', chrome_history],
                 "History Gaps": [f'{self.profile_path}/History', chrome_history_gaps],
                 "Downloads": [f'{self.profile_path}/History', chrome_downloads],
                 "Downloads Gaps": [f'{self.profile_path}/History', chrome_downloads_gaps],
@@ -482,6 +487,29 @@ class ModernChromeParserGUI:
                         write_excel(dataframe_searchterms, ws, self.output_path)
                         record_counts.append((ws, len(dataframe_searchterms)))
                         self.update_status(f"✓ Search Terms: {len(dataframe_searchterms)} records processed")
+
+                    # Processes the different cluster options
+                    # Cluster overview
+                    # Cluster content
+                    # Cluster search term
+
+                    elif artifact_name == "History Clusters":
+                        clusters = [chrome_history_clusters_overview,
+                                    chrome_history_clusters_contents,
+                                    chrome_history_clusters_search_term,
+                                    chrome_history_clusters_timeline,
+                                    chrome_history_clusters_duplicate_visits,
+                                    chrome_history_clusters_comprehensive_export
+                                    ]
+
+                        for cluster_func in clusters:
+                            df, ws = self.get_dataframes(
+                                f'{self.profile_path}/History',
+                                cluster_func
+                            )
+                            write_excel(df, ws, self.output_path)
+                            record_counts.append((ws, len(df)))
+                            self.update_status(f"✓ {ws}: {len(df)} records processed")
 
                     elif artifact_name == "Bookmarks":
                         bookmarks_df, ws = self.process_bookmarks()
