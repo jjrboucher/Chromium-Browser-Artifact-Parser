@@ -267,3 +267,664 @@ def chrome_history_gaps():
     """
 
     return sql_query, worksheet
+
+
+def chrome_history_clusters_overview():
+    worksheet = 'Clusters Overview'
+    sql_query = """
+        -- ============================================================================
+        -- Query 1: Full Cluster Overview
+        -- ============================================================================
+        -- Purpose:     Lists all clusters with their labels, keywords, and visit
+        --              counts. Use as an initial triage query to understand the scope
+        --              and topics of clustered browsing activity.
+        --
+        -- Tables used: clusters, clusters_and_visits, cluster_keywords
+        --
+        -- Output:      One row per cluster with aggregated keyword list and visit count.
+        --
+        -- Best practice: Raw values are displayed alongside decoded values so that
+        --                an independent party can verify the decoding. A forensic
+        --                examiner must be able to testify to both the original stored
+        --                value and its interpretation.
+        --
+        -- References:
+        --   Chromium source - visit_annotations_database.cc/.h:
+        --     https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/history/core/browser/visit_annotations_database.h
+        --   Chromium test schema (history.57.sql):
+        --     https://cocalc.com/github/chromium/chromium/blob/main/components/test/data/history/history.57.sql
+        -- ============================================================================
+        
+        SELECT
+            c.cluster_id,
+            c.label                                         AS 'cluster_label',
+            c.raw_label,
+        
+            -- Raw boolean value as stored in DB
+            c.should_show_on_prominent_ui_surfaces           AS 'prominent (raw)',
+            -- Decoded boolean for readability
+            CASE c.should_show_on_prominent_ui_surfaces
+                WHEN 1 THEN 'Yes'
+                WHEN 0 THEN 'No'
+                ELSE 'Unknown: ' || c.should_show_on_prominent_ui_surfaces
+            END                                              AS 'prominent (decoded)',
+        
+            COUNT(DISTINCT cv.visit_id)                      AS 'visit_count',
+        
+            -- Aggregated keyword list with raw type values shown
+            GROUP_CONCAT(
+                DISTINCT ck.keyword || ' [type=' || ck.type || ']'
+            )                                                AS 'keywords [with raw type]'
+        
+        FROM clusters c
+        LEFT JOIN clusters_and_visits cv
+            ON c.cluster_id = cv.cluster_id
+        LEFT JOIN cluster_keywords ck
+            ON c.cluster_id = ck.cluster_id
+        
+        GROUP BY c.cluster_id
+        ORDER BY c.cluster_id;
+    """
+
+    return sql_query, worksheet
+
+
+def chrome_history_clusters_contents():
+    worksheet = 'Clusters Contents'
+    sql_query = """
+        -- ============================================================================
+        -- Query 2: Detailed Cluster Contents
+        -- ============================================================================
+        -- Purpose:     Shows every visit within each cluster with timestamps, URLs,
+        --              page titles, relevance/engagement scores, and visit durations.
+        --              Core query for reconstructing what the user viewed within each
+        --              research session.
+        --
+        -- Tables used: clusters, clusters_and_visits, visits, urls
+        --
+        -- Output:      One row per cluster-visit pair, ordered by cluster then by
+        --              relevance score (most important visits first).
+        --
+        -- Timestamp:   Chrome/WebKit epoch (microseconds since 1601-01-01 UTC).
+        --              Raw value preserved; decoded via:
+        --                datetime(value / 1000000 - 11644473600, 'unixepoch')
+        --
+        -- Best practice: Raw values are displayed alongside decoded values so that
+        --                an independent party can verify the decoding.
+        --
+        -- References:
+        --   Chromium browsing history database - Wikiversity:
+        --     https://en.wikiversity.org/wiki/Chromium_browsing_history_database
+        --   Chrome Values Lookup Tables (transition types):
+        --     https://dfir.blog/chrome-values-lookup-tables/
+        --   Chromium source - page_transition_types.h:
+        --     https://cs.chromium.org/chromium/src/ui/base/page_transition_types.h
+        -- ============================================================================
+        
+        SELECT
+            c.cluster_id,
+            c.label                                                         AS 'cluster_label',
+        
+            cv.visit_id,
+        
+            -- Raw Chrome timestamp (microseconds since 1601-01-01)
+            v.visit_time                                                    AS 'visit_time (raw)',
+            -- Decoded to human-readable UTC
+            CASE
+                WHEN v.visit_time IS NULL THEN NULL
+                ELSE datetime(v.visit_time / 1000000 - 11644473600, 'unixepoch')
+            END                                                             AS 'visit_time (decoded UTC)',
+        
+            u.url,
+            u.title,
+        
+            cv.score                                                        AS 'cluster_relevance_score',
+            cv.engagement_score,
+            cv.url_for_display,
+            cv.url_for_deduping,
+            cv.normalized_url,
+        
+            -- Raw visit_duration in microseconds
+            v.visit_duration                                                AS 'visit_duration (raw, microseconds)',
+            -- Decoded to seconds with 2 decimal places
+            CASE
+                WHEN v.visit_duration IS NULL THEN NULL
+                ELSE printf("%.2f", v.visit_duration / 1000000.0)
+            END                                                             AS 'visit_duration (decoded, seconds)',
+        
+            -- Raw transition value (4-byte integer with core type + qualifiers)
+            v.transition                                                    AS 'transition (raw)',
+            -- Core transition type (lowest byte)
+            v.transition & 0xFF                                             AS 'transition_core (raw)',
+            -- Decoded core transition type
+            CASE (v.transition & 0xFF)
+                WHEN 0 THEN 'Clicked on a link'
+                WHEN 1 THEN 'Typed URL'
+                WHEN 2 THEN 'Clicked on suggestion in the UI'
+                WHEN 3 THEN 'Auto subframe navigation'
+                WHEN 4 THEN 'User manual subframe navigation'
+                WHEN 5 THEN 'User typed text in URL bar, selected non-URL entry'
+                WHEN 6 THEN 'Top level navigation'
+                WHEN 7 THEN 'User submitted form data'
+                WHEN 8 THEN 'User reloaded page'
+                WHEN 9 THEN 'URL from replaceable keyword (not default search)'
+                WHEN 10 THEN 'Visit generated for a keyword'
+                ELSE 'Unknown: ' || (v.transition & 0xFF)
+            END                                                             AS 'transition_core (decoded)',
+        
+            -- Transition qualifier flags (upper bytes)
+            CASE (v.transition & 0x01000000)
+                WHEN 0x01000000 THEN 'yes'
+            END                                                             AS 'Forward/Back button',
+        
+            CASE (v.transition & 0x02000000)
+                WHEN 0x02000000 THEN 'yes'
+            END                                                             AS 'From Address Bar',
+        
+            CASE (v.transition & 0x10000000)
+                WHEN 0x10000000 THEN 'yes'
+            END                                                             AS 'Start of redirect chain',
+        
+            CASE (v.transition & 0x20000000)
+                WHEN 0x20000000 THEN 'yes'
+            END                                                             AS 'End of redirect chain',
+        
+            v.from_visit
+        
+        FROM clusters c
+        JOIN clusters_and_visits cv
+            ON c.cluster_id = cv.cluster_id
+        JOIN visits v
+            ON cv.visit_id = v.id
+        JOIN urls u
+            ON v.url = u.id
+        ORDER BY
+            c.cluster_id,
+            cv.score DESC;
+    """
+
+    return sql_query, worksheet
+
+
+def chrome_history_clusters_search_term():
+    worksheet = 'Clusters Search Term'
+    sql_query = """
+        -- ============================================================================
+        -- Query 3: Search Terms Associated with Clusters
+        -- ============================================================================
+        -- Purpose:     Identifies what search terms the user entered that are
+        --              associated with visits within each cluster. HIGH forensic
+        --              value for establishing user intent and research topics.
+        --
+        --              NOTE ON DATA SOURCE:
+        --              The cluster_keywords table (which was designed to store
+        --              per-cluster keyword labels) is typically EMPTY in modern
+        --              Chrome builds. The Journeys UI was removed in Chrome 125
+        --              (May 2024), and the keyword extraction pipeline that
+        --              populated cluster_keywords appears to have been disabled
+        --              before that. The table persists in the schema but receives
+        --              no data.
+        --
+        --              This query instead derives the same forensic insight by
+        --              joining clusters_and_visits to the content_annotations
+        --              table, which stores per-visit search terms captured by
+        --              Chrome's content analysis pipeline. This table IS actively
+        --              populated in current Chrome builds.
+        --
+        --              A companion query against cluster_keywords is included at
+        --              the bottom (commented out) in case future Chrome versions
+        --              or Chromium-based browsers repopulate that table.
+        --
+        -- Tables used: clusters, clusters_and_visits, visits, urls,
+        --              content_annotations
+        --
+        -- Output:      One row per cluster/search-term combination, with the
+        --              number of visits and temporal span of the cluster.
+        --
+        -- Timestamp:   Chrome/WebKit epoch (microseconds since 1601-01-01 UTC).
+        --              Raw value preserved; decoded via:
+        --                datetime(value / 1000000 - 11644473600, 'unixepoch')
+        --
+        -- Best practice: Raw values are displayed alongside decoded values so that
+        --                an independent party can verify the decoding.
+        --
+        -- References:
+        --   Chromium source - visit_annotations_database.cc/.h:
+        --     https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/history/core/browser/visit_annotations_database.h
+        --   Chromium source - history_types.h:
+        --     https://chromium.googlesource.com/chromium/src/+/master/components/history/core/browser/history_types.h
+        --   Chromium test schema (history.57.sql):
+        --     https://cocalc.com/github/chromium/chromium/blob/main/components/test/data/history/history.57.sql
+        -- ============================================================================
+        
+        -- ──────────────────────────────────────────────────────────────────────────
+        -- PRIMARY QUERY: Search terms from content_annotations joined to clusters
+        -- ──────────────────────────────────────────────────────────────────────────
+        
+        SELECT
+            c.cluster_id,
+            c.label                                                                 AS 'cluster_label',
+            c.raw_label,
+        
+            ca.search_terms,
+            ca.search_normalized_url,
+        
+            -- Number of visits in this cluster tied to this search term
+            COUNT(DISTINCT cv.visit_id)                                             AS 'visits_with_this_term',
+        
+            -- Earliest visit in this cluster with this search term (raw)
+            MIN(v.visit_time)                                                       AS 'earliest_visit_time (raw)',
+            -- Decoded to UTC
+            datetime(MIN(v.visit_time) / 1000000 - 11644473600, 'unixepoch')       AS 'earliest_visit_time (decoded UTC)',
+        
+            -- Latest visit in this cluster with this search term (raw)
+            MAX(v.visit_time)                                                       AS 'latest_visit_time (raw)',
+            -- Decoded to UTC
+            datetime(MAX(v.visit_time) / 1000000 - 11644473600, 'unixepoch')       AS 'latest_visit_time (decoded UTC)',
+        
+            -- Span in raw microseconds
+            MAX(v.visit_time) - MIN(v.visit_time)                                   AS 'span (raw, microseconds)',
+            -- Span decoded to minutes
+            printf("%.1f", (MAX(v.visit_time) - MIN(v.visit_time)) / 1000000.0 / 60.0)
+                                                                                    AS 'span (decoded, minutes)',
+        
+            -- Sample URLs visited after this search (comma-separated)
+            GROUP_CONCAT(DISTINCT u.url)                                            AS 'associated_urls'
+        
+        FROM clusters c
+        JOIN clusters_and_visits cv
+            ON c.cluster_id = cv.cluster_id
+        JOIN visits v
+            ON cv.visit_id = v.id
+        JOIN urls u
+            ON v.url = u.id
+        -- INNER JOIN: only visits that have content annotations with search terms
+        JOIN content_annotations ca
+            ON v.id = ca.visit_id
+        WHERE
+            ca.search_terms IS NOT NULL
+            AND ca.search_terms != ''
+        GROUP BY c.cluster_id, ca.search_terms
+        ORDER BY MIN(v.visit_time) DESC;
+    """
+
+    return sql_query, worksheet
+
+def chrome_history_clusters_timeline():
+    worksheet = 'Clusters Timeline'
+    sql_query = """
+        -- ============================================================================
+        -- Query 4: Cluster Timeline
+        -- ============================================================================
+        -- Purpose:     Shows the temporal span of each cluster: when the first and
+        --              last visits occurred, total duration in minutes, and how many
+        --              unique URLs were visited. Useful for establishing when a
+        --              research session took place and how long it lasted.
+        --
+        -- Tables used: clusters, clusters_and_visits, visits, urls
+        --
+        -- Output:      One row per cluster with first/last timestamps (raw + decoded),
+        --              session duration, visit count, and unique URL count.
+        --
+        -- Timestamp:   Chrome/WebKit epoch (microseconds since 1601-01-01 UTC).
+        --              Raw value preserved; decoded via:
+        --                datetime(value / 1000000 - 11644473600, 'unixepoch')
+        --
+        -- Best practice: Raw values are displayed alongside decoded values so that
+        --                an independent party can verify the decoding.
+        --
+        -- References:
+        --   Chromium browsing history database - Wikiversity:
+        --     https://en.wikiversity.org/wiki/Chromium_browsing_history_database
+        --   Chromium test schema (history.57.sql):
+        --     https://cocalc.com/github/chromium/chromium/blob/main/components/test/data/history/history.57.sql
+        -- ============================================================================
+        
+        SELECT
+            c.cluster_id,
+            c.label                                                                 AS 'cluster_label',
+        
+            -- Raw boolean for prominent flag
+            c.should_show_on_prominent_ui_surfaces                                  AS 'prominent (raw)',
+            CASE c.should_show_on_prominent_ui_surfaces
+                WHEN 1 THEN 'Yes'
+                WHEN 0 THEN 'No'
+                ELSE 'Unknown: ' || c.should_show_on_prominent_ui_surfaces
+            END                                                                     AS 'prominent (decoded)',
+        
+            -- First visit in this cluster: raw Chrome timestamp
+            MIN(v.visit_time)                                                       AS 'first_visit_time (raw)',
+            -- First visit: decoded to UTC
+            datetime(MIN(v.visit_time) / 1000000 - 11644473600, 'unixepoch')       AS 'first_visit_time (decoded UTC)',
+        
+            -- Last visit in this cluster: raw Chrome timestamp
+            MAX(v.visit_time)                                                       AS 'last_visit_time (raw)',
+            -- Last visit: decoded to UTC
+            datetime(MAX(v.visit_time) / 1000000 - 11644473600, 'unixepoch')       AS 'last_visit_time (decoded UTC)',
+        
+            -- Span in raw microseconds
+            MAX(v.visit_time) - MIN(v.visit_time)                                   AS 'span (raw, microseconds)',
+            -- Span decoded to minutes
+            printf("%.1f", (MAX(v.visit_time) - MIN(v.visit_time)) / 1000000.0 / 60.0)
+                                                                                    AS 'span (decoded, minutes)',
+        
+            -- Number of visits in the cluster
+            COUNT(DISTINCT cv.visit_id)                                             AS 'visit_count',
+        
+            -- Number of distinct URLs visited
+            COUNT(DISTINCT u.id)                                                    AS 'unique_urls'
+        
+        FROM clusters c
+        JOIN clusters_and_visits cv
+            ON c.cluster_id = cv.cluster_id
+        JOIN visits v
+            ON cv.visit_id = v.id
+        JOIN urls u
+            ON v.url = u.id
+        GROUP BY c.cluster_id
+        ORDER BY MIN(v.visit_time) DESC;
+    """
+
+    return sql_query, worksheet
+
+def chrome_history_clusters_duplicate_visits():
+    worksheet = 'Clusters Duplicate Visits'
+    sql_query = """
+        -- ============================================================================
+        -- Query 5: Duplicate Visits
+        -- ============================================================================
+        -- Purpose:     Identifies visits that Chrome's clustering engine considered
+        --              duplicates of each other (same logical page visited multiple
+        --              times during a research session). Shows both the canonical
+        --              and duplicate visit with timestamps (raw + decoded) and URLs.
+        --
+        --              Forensic significance: Repeated visits to the same page
+        --              during a session indicate sustained user interest, possibly
+        --              suggesting the page was particularly relevant to the user's
+        --              research or intent.
+        --
+        -- Tables used: cluster_visit_duplicates, visits, urls
+        --
+        -- Output:      One row per duplicate pair, showing both the canonical and
+        --              duplicate visit details side by side with raw and decoded
+        --              timestamps.
+        --
+        -- Timestamp:   Chrome/WebKit epoch (microseconds since 1601-01-01 UTC).
+        --              Raw value preserved; decoded via:
+        --                datetime(value / 1000000 - 11644473600, 'unixepoch')
+        --
+        -- Best practice: Raw values are displayed alongside decoded values so that
+        --                an independent party can verify the decoding.
+        --
+        -- References:
+        --   Chromium source - visit_annotations_database.cc/.h:
+        --     https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/history/core/browser/visit_annotations_database.h
+        --   Exploring the Vivaldi History Database (LonM):
+        --     https://lonm.vivaldi.net/2025/03/04/exploring-the-vivaldi-history-database/
+        -- ============================================================================
+        
+        SELECT
+            -- Canonical visit details
+            cvd.visit_id                                                            AS 'canonical_visit_id',
+        
+            v1.visit_time                                                           AS 'canonical_visit_time (raw)',
+            CASE
+                WHEN v1.visit_time IS NULL THEN NULL
+                ELSE datetime(v1.visit_time / 1000000 - 11644473600, 'unixepoch')
+            END                                                                     AS 'canonical_visit_time (decoded UTC)',
+        
+            u1.url                                                                  AS 'canonical_url',
+            u1.title                                                                AS 'canonical_title',
+        
+            -- Duplicate visit details
+            cvd.duplicate_visit_id,
+        
+            v2.visit_time                                                           AS 'duplicate_visit_time (raw)',
+            CASE
+                WHEN v2.visit_time IS NULL THEN NULL
+                ELSE datetime(v2.visit_time / 1000000 - 11644473600, 'unixepoch')
+            END                                                                     AS 'duplicate_visit_time (decoded UTC)',
+        
+            u2.url                                                                  AS 'duplicate_url',
+            u2.title                                                                AS 'duplicate_title',
+        
+            -- Time gap between canonical and duplicate in raw microseconds
+            ABS(v2.visit_time - v1.visit_time)                                      AS 'time_gap (raw, microseconds)',
+            -- Time gap decoded to seconds
+            printf("%.1f", ABS(v2.visit_time - v1.visit_time) / 1000000.0)         AS 'time_gap (decoded, seconds)'
+        
+        FROM cluster_visit_duplicates cvd
+        JOIN visits v1
+            ON cvd.visit_id = v1.id
+        JOIN urls u1
+            ON v1.url = u1.id
+        JOIN visits v2
+            ON cvd.duplicate_visit_id = v2.id
+        JOIN urls u2
+            ON v2.url = u2.id
+        ORDER BY cvd.visit_id;
+    """
+
+    return sql_query, worksheet
+
+
+def chrome_history_clusters_comprehensive_export():
+    worksheet = 'Clusters Comprehensive Export'
+    sql_query = """
+        -- ============================================================================
+        -- Query 6: Comprehensive Forensic Export
+        -- ============================================================================
+        -- Purpose:     Full cluster data joined with content annotations (search
+        --              terms, entities, visibility scores) and context annotations
+        --              (foreground duration, page end reason). Produces a complete
+        --              export suitable for ingestion into forensic timeline tools
+        --              (e.g., Hindsight, Axiom, X-Ways).
+        --
+        --              Every field that requires decoding is presented twice:
+        --              first the raw value as stored in the database, then the
+        --              decoded/interpreted value. This ensures an independent party
+        --              can verify every interpretation.
+        --
+        -- Tables used: clusters, clusters_and_visits, visits, urls,
+        --              content_annotations, context_annotations
+        --
+        -- Output:      One row per cluster-visit pair with all available metadata.
+        --
+        -- Timestamp:   Chrome/WebKit epoch (microseconds since 1601-01-01 UTC).
+        --              Raw value preserved; decoded via:
+        --                datetime(value / 1000000 - 11644473600, 'unixepoch')
+        --
+        -- Note:        The content_annotations and context_annotations tables were
+        --              introduced alongside the cluster tables. They contain per-visit
+        --              metadata generated by Chrome's content analysis pipeline.
+        --              LEFT JOINs are used because not all visits have annotations.
+        --
+        -- References:
+        --   Chromium source - visit_annotations_database.cc/.h:
+        --     https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/history/core/browser/visit_annotations_database.h
+        --   Chromium source - history_types.h:
+        --     https://chromium.googlesource.com/chromium/src/+/master/components/history/core/browser/history_types.h
+        --   Chromium source - page_transition_types.h:
+        --     https://cs.chromium.org/chromium/src/ui/base/page_transition_types.h
+        --   Chrome Values Lookup Tables (transition types, visit sources):
+        --     https://dfir.blog/chrome-values-lookup-tables/
+        --   Hindsight - Chrome forensics tool:
+        --     https://github.com/obsidianforensics/hindsight
+        --   Chromium browsing history database - Wikiversity:
+        --     https://en.wikiversity.org/wiki/Chromium_browsing_history_database
+        -- ============================================================================
+        
+        SELECT
+            -- ── Cluster metadata ──────────────────────────────────────────────────
+            c.cluster_id,
+            c.label                                                                 AS 'cluster_label',
+            c.raw_label,
+        
+            c.should_show_on_prominent_ui_surfaces                                  AS 'prominent (raw)',
+            CASE c.should_show_on_prominent_ui_surfaces
+                WHEN 1 THEN 'Yes'
+                WHEN 0 THEN 'No'
+                ELSE 'Unknown: ' || c.should_show_on_prominent_ui_surfaces
+            END                                                                     AS 'prominent (decoded)',
+        
+            -- ── Visit identification ──────────────────────────────────────────────
+            cv.visit_id,
+        
+            -- ── Visit timestamp ───────────────────────────────────────────────────
+            v.visit_time                                                            AS 'visit_time (raw)',
+            CASE
+                WHEN v.visit_time IS NULL THEN NULL
+                ELSE datetime(v.visit_time / 1000000 - 11644473600, 'unixepoch')
+            END                                                                     AS 'visit_time (decoded UTC)',
+        
+            -- ── URL and page details ──────────────────────────────────────────────
+            u.url,
+            u.title,
+            u.visit_count                                                           AS 'total_url_visits',
+        
+            -- ── Cluster scoring ───────────────────────────────────────────────────
+            cv.score                                                                AS 'relevance_score',
+            cv.engagement_score,
+        
+            -- ── URL variants stored by clustering engine ──────────────────────────
+            cv.url_for_display,
+            cv.normalized_url,
+            cv.url_for_deduping,
+        
+            -- ── Visit duration ────────────────────────────────────────────────────
+            v.visit_duration                                                        AS 'visit_duration (raw, microseconds)',
+            CASE
+                WHEN v.visit_duration IS NULL THEN NULL
+                ELSE printf("%.2f", v.visit_duration / 1000000.0)
+            END                                                                     AS 'visit_duration (decoded, seconds)',
+        
+            -- ── Navigation chain ──────────────────────────────────────────────────
+            v.from_visit,
+        
+            -- ── Transition (raw full 4-byte value) ────────────────────────────────
+            v.transition                                                            AS 'transition (raw)',
+        
+            -- Core transition type (lowest byte, raw)
+            v.transition & 0xFF                                                     AS 'transition_core (raw)',
+            -- Core transition type (decoded)
+            CASE (v.transition & 0xFF)
+                WHEN 0 THEN 'Clicked on a link'
+                WHEN 1 THEN 'Typed URL'
+                WHEN 2 THEN 'Clicked on suggestion in the UI'
+                WHEN 3 THEN 'Auto subframe navigation'
+                WHEN 4 THEN 'User manual subframe navigation'
+                WHEN 5 THEN 'User typed text in URL bar, selected non-URL entry'
+                WHEN 6 THEN 'Top level navigation'
+                WHEN 7 THEN 'User submitted form data'
+                WHEN 8 THEN 'User reloaded page'
+                WHEN 9 THEN 'URL from replaceable keyword (not default search)'
+                WHEN 10 THEN 'Visit generated for a keyword'
+                ELSE 'Unknown: ' || (v.transition & 0xFF)
+            END                                                                     AS 'transition_core (decoded)',
+        
+            -- ── Transition qualifier flags (each raw bit + decoded) ───────────────
+            CASE (v.transition & 0x00800000)
+                WHEN 0x00800000 THEN 'yes'
+            END                                                                     AS 'URL Blocked',
+        
+            CASE (v.transition & 0x01000000)
+                WHEN 0x01000000 THEN 'yes'
+            END                                                                     AS 'Forward/Back button',
+        
+            CASE (v.transition & 0x02000000)
+                WHEN 0x02000000 THEN 'yes'
+            END                                                                     AS 'From Address Bar',
+        
+            CASE (v.transition & 0x04000000)
+                WHEN 0x04000000 THEN 'yes'
+            END                                                                     AS 'Home page navigation',
+        
+            CASE (v.transition & 0x08000000)
+                WHEN 0x08000000 THEN 'yes'
+            END                                                                     AS 'From external application',
+        
+            CASE (v.transition & 0x10000000)
+                WHEN 0x10000000 THEN 'yes'
+            END                                                                     AS 'Start of redirect chain',
+        
+            CASE (v.transition & 0x20000000)
+                WHEN 0x20000000 THEN 'yes'
+            END                                                                     AS 'End of redirect chain',
+        
+            CASE (v.transition & 0x40000000)
+                WHEN 0x40000000 THEN 'yes'
+            END                                                                     AS 'JS redirect',
+        
+            CASE (v.transition & 0x80000000)
+                WHEN 0x80000000 THEN 'yes'
+            END                                                                     AS 'Server redirect (HTTP header)',
+        
+            CASE (v.transition & 0xC0000000)
+                WHEN 0xC0000000 THEN 'yes'
+            END                                                                     AS 'Any redirect involved',
+        
+            -- ── Content annotations ───────────────────────────────────────────────
+            ca.search_normalized_url,
+            ca.search_terms,
+            ca.visibility_score,
+            ca.categories                                                           AS 'page_categories',
+            ca.entities                                                             AS 'page_entities',
+            ca.related_searches,
+            ca.alternative_title,
+            ca.annotation_flags                                                     AS 'annotation_flags (raw)',
+        
+            -- ── Context annotations ───────────────────────────────────────────────
+            ctx.context_annotation_flags                                            AS 'context_flags (raw)',
+        
+            -- Duration since last visit (raw, microseconds)
+            ctx.duration_since_last_visit                                           AS 'duration_since_last_visit (raw, microseconds)',
+            -- Decoded to seconds
+            CASE
+                WHEN ctx.duration_since_last_visit IS NULL THEN NULL
+                ELSE printf("%.2f", ctx.duration_since_last_visit / 1000000.0)
+            END                                                                     AS 'duration_since_last_visit (decoded, seconds)',
+        
+            -- Page end reason (raw integer)
+            ctx.page_end_reason                                                     AS 'page_end_reason (raw)',
+            -- Decoded page end reason (from Chromium page_end_reasons.h)
+            CASE ctx.page_end_reason
+                WHEN 0 THEN 'END_OTHER'
+                WHEN 1 THEN 'END_RELOAD'
+                WHEN 2 THEN 'END_NAVIGATION'
+                WHEN 3 THEN 'END_STOP'
+                WHEN 4 THEN 'END_CLOSE'
+                WHEN 5 THEN 'END_NEW_NAVIGATION'
+                ELSE
+                    CASE
+                        WHEN ctx.page_end_reason IS NULL THEN NULL
+                        ELSE 'Unknown: ' || ctx.page_end_reason
+                    END
+            END                                                                     AS 'page_end_reason (decoded)',
+        
+            -- Total foreground duration (raw, microseconds)
+            ctx.total_foreground_duration                                           AS 'total_foreground_duration (raw, microseconds)',
+            -- Decoded to seconds
+            CASE
+                WHEN ctx.total_foreground_duration IS NULL THEN NULL
+                ELSE printf("%.2f", ctx.total_foreground_duration / 1000000.0)
+            END                                                                     AS 'total_foreground_duration (decoded, seconds)'
+        
+        FROM clusters c
+        JOIN clusters_and_visits cv
+            ON c.cluster_id = cv.cluster_id
+        JOIN visits v
+            ON cv.visit_id = v.id
+        JOIN urls u
+            ON v.url = u.id
+        -- LEFT JOIN: not all visits have content annotations
+        LEFT JOIN content_annotations ca
+            ON v.id = ca.visit_id
+        -- LEFT JOIN: not all visits have context annotations
+        LEFT JOIN context_annotations ctx
+            ON v.id = ctx.visit_id
+        ORDER BY
+            c.cluster_id,
+            v.visit_time;
+    """
+
+    return sql_query, worksheet
