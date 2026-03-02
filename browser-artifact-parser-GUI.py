@@ -10,6 +10,7 @@
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, font
+from Classes.ChromeExtensions import ChromeExtensions
 from Classes.Preferences import Preferences
 from Functions.write_to_excel import write_excel
 from JSON.bookmarks import get_chromium_bookmarks
@@ -124,6 +125,7 @@ class ModernChromeParserGUI:
             'Search Terms': {'enabled': True, 'query': 'Search Terms'},
             'Bookmarks': {'enabled': True, 'query': 'Bookmarks'},
             'Preferences': {'enabled': True, 'query': 'Preferences'},
+            'Extensions': {'enabled': True, 'query': 'Extensions'},
             'Web Assist (Edge)': {'enabled': False, 'query': 'Web Assist'}
         }
 
@@ -518,9 +520,49 @@ class ModernChromeParserGUI:
                         self.update_status(f"✓ Bookmarks: {len(bookmarks_df)} records processed")
 
                     elif artifact_name == "Preferences":
+                        ws = "Preferences"
                         temp_record_count = self.process_preferences()
-                        record_counts.append(("Preferences", temp_record_count))
-                        self.update_status(f"✓ Preferences processed")
+                        record_counts.append((ws, temp_record_count))
+                        self.update_status(f"✓ {ws} processed")
+
+                    elif artifact_name == "Extensions":
+                        ws = 'Extensions'
+
+                        extension_list = [[]]
+                        extensions_df = pd.DataFrame()
+                        extensions = ChromeExtensions(self.profile_path)
+                        all_extensions = extensions.get_manifest_paths()
+                        extension_count = extensions.get_extension_count()
+
+                        if extension_count == 0:
+                            extension_list = [["","","","","",""]]
+                        else:
+                            for ext_ID in all_extensions.keys():
+                                extension_list.append([
+                                    ext_ID,
+                                    extensions.get_name(ext_ID),
+                                    extensions.get_version(ext_ID),
+                                    extensions.get_description(ext_ID),
+                                    extensions.get_author(ext_ID),
+                                    extensions.get_homepage_url(ext_ID)
+                                ])
+
+                        extensions_df = pd.DataFrame(extension_list)
+
+                        extensions_df.columns = [
+                            "ID",
+                            "Name",
+                            "Version",
+                            "Description",
+                            "Author",
+                            "Homepage URL"
+                        ]
+                        write_excel(extensions_df, ws, self.output_path)
+
+                        record_counts.append((ws, extension_count))
+                        self.update_status(f"✓ {ws}: {extension_count} extensions processed")
+
+
 
                 except Exception as error:
                     self.update_status(f"❌ Failed to process {artifact_name}")
