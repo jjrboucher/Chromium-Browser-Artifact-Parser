@@ -2,6 +2,8 @@
 
 **The guides included with the script were created with Claude.ai. Thus, there may be some inaccuracies in the instructions. But they should suffice to allow you to successfully use the application and review the output.**
 
+**The Python script was coded by the author, with some assistance from ai (to create the GUI, and troubleshooting some of the code).**
+
 **programer's manual** technical manual about the application
 
 **user's guide** Guide for those who will run the application
