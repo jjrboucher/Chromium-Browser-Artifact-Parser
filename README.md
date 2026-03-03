@@ -1,5 +1,13 @@
 **IMPORTANT CAVEATS - NOT A FORENSIC TOOL - THIS IS A TRIAGE TOOL**
 
+**The guides included with the script were created with Claude.ai. Thus, there may be some inaccuracies in the instructions. But they should suffice to allow you to successfully use the application and review the output.**
+
+**programer's manual** technical manual about the application
+
+**user's guide** Guide for those who will run the application
+
+**investigator's guide** Guide to give to your investigator who will be reviewing the extracted report in Excel
+
 The script currently opens the DB in Read Only mode. Journaling file not processed. Meaning there could be pending transactions in the journaling file that you will not see in the output of this script.
 
 The script also does not look for deleted pages within an SQLite file.
