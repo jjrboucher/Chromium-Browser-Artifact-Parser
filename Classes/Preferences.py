@@ -14,6 +14,22 @@ class Preferences:
         with open(self.pref_file, 'r', encoding='utf-8') as p:
             self.prefs = json.load(p)
 
+    def is_edge(self):
+        """
+        Returns True if the Preferences file originates from Microsoft Edge.
+
+        Detection uses two independent Edge-exclusive top-level keys:
+          - 'edge'  : a dedicated Edge settings namespace (account type, bookmarks,
+                      Copilot consent, MSA SSO info, etc.) absent from all Chromium builds.
+          - 'muid'  : Microsoft User ID, written by Edge on first run.
+
+        Checking both avoids a false positive if either key ever appears in a
+        future Chromium build for an unrelated purpose. Either key alone is
+        already a strong signal, but both together is unambiguous.
+        """
+        return (self.prefs.get("edge") is not None or
+                self.prefs.get("muid") is not None)
+
     def email(self):
         try:
             email_address =  self.prefs.get("account_info")[0].get("email")
@@ -130,17 +146,24 @@ class Preferences:
         return creation_time
 
     def previousNavigationTime(self):
+        """
+        Chrome stores this at NewTabPage.PrevNavigationTime.
+        Edge stores an equivalent timestamp at ntp.ntp_last_creation_time_v2.
+        """
         try:
-            prev_nav_time = self.prefs.get("NewTabPage").get("PrevNavigationTime")
+            prev_nav_time = (self.prefs.get("NewTabPage") or {}).get("PrevNavigationTime")
+            if prev_nav_time is None:
+                # Edge equivalent
+                prev_nav_time = (self.prefs.get("ntp") or {}).get("ntp_last_creation_time_v2")
+            if prev_nav_time is None:
+                return "not found"
             # WebKit timestamp is in microseconds since January 1, 1601
             base_date = datetime(1601, 1, 1)
-            # Convert WebKit time (microseconds) to seconds
             timestamp_in_seconds = int(prev_nav_time) / 1_000_000
-            # Add to base date
             human_readable_date = base_date + timedelta(seconds=timestamp_in_seconds)
-            prev_nav_time =  f'{prev_nav_time} = {human_readable_date} UTC'
+            prev_nav_time = f'{prev_nav_time} = {human_readable_date} UTC'
         except (KeyError, IndexError, AttributeError, TypeError):
-            prev_nav_time =  "not found"
+            prev_nav_time = "not found"
 
         return prev_nav_time
 
@@ -155,11 +178,11 @@ class Preferences:
 
     def download_directory(self):
         try:
-            dd =  self.prefs.get("download").get("default_directory")
+            dd = self.prefs.get("download").get("default_directory")
         except (KeyError, IndexError, AttributeError, TypeError):
-            dd =  "not found"
+            dd = None
 
-        return dd
+        return dd if dd is not None else "not found"
 
     def save_file_directory(self):
         try:
@@ -184,37 +207,33 @@ class Preferences:
         clusters_parsed = ''
         try:
             clusters = self.prefs.get("history_clusters").get("all_cache").get("all_keywords")
+            if clusters:
+                for kw in clusters.keys():
+                    clusters_parsed += (f'     keyword: {kw}\n'
+                                        f'          score: {clusters[kw].get("score", "N/A")}\n'
+                                        f'          type: {clusters[kw].get("type", "N/A")}\n')
         except (KeyError, IndexError, AttributeError, TypeError):
-            clusters = "not found"
+            clusters_parsed = ''
 
-        if clusters != "not found":  # meaning there are clusters to parse
-            clusters_parsed = f''
-            for kw in clusters.keys():
-                clusters_parsed = clusters_parsed + (f'     keyword: {kw}\n'
-                                       f'          score: {clusters.get(kw)["score"]}\n'
-                                       f'          type: {clusters.get(kw)["type"]}\n')
-
-        return f'     Nil\n' if clusters_parsed == "" else clusters_parsed
+        return f'     Nil\n' if not clusters_parsed else clusters_parsed
 
     def new_tab(self):
         """
         links you see on a new tab
         """
-
         mv_parsed = ''
         try:
             mv = self.prefs.get("custom_links").get("list")
         except (KeyError, IndexError, AttributeError, TypeError):
-            mv = "not found"
+            mv = None
 
-        if mv != "not found":  # meaning there are URLs to parse
-            mv_parsed = f''
+        if mv:  # guards against both None and an empty list
             for entry in mv:
-                mv_parsed = mv_parsed + (f'     isMostVisited: {entry.get("isMostVisited")}\n'
-                                       f'          title: {entry.get("title")}\n'
-                                       f'          url: {entry.get("url")}\n')
+                mv_parsed += (f'     isMostVisited: {entry.get("isMostVisited")}\n'
+                              f'          title: {entry.get("title")}\n'
+                              f'          url: {entry.get("url")}\n')
 
-        return f'     Nil\n' if mv_parsed == "" else mv_parsed
+        return f'     Nil\n' if not mv_parsed else mv_parsed
 
     def startup(self):
         """
@@ -225,6 +244,8 @@ class Preferences:
 
         Other values not defined at this time
 
+        Chrome / older Edge store this as an integer at session.restore_on_startup.
+        Newer Edge encrypts it as a hex blob at session.restore_on_startup_edge_enclave.
         """
 
         startup_option={1:"Continue where you left off",
@@ -232,33 +253,46 @@ class Preferences:
                         5:"Open the New Tab page"}
 
         try:
-            startup_value = self.prefs.get("session").get("restore_on_startup")
+            session = self.prefs.get("session") or {}
+            startup_value = session.get("restore_on_startup")
+            if startup_value is None:
+                enclave = session.get("restore_on_startup_edge_enclave")
+                if isinstance(enclave, str) and len(enclave) > 50:
+                    return "Encrypted (Edge enclave protected - cannot decode)"
+                startup_value = "not found"
         except (KeyError, IndexError, AttributeError, TypeError):
             startup_value = "not found"
 
-        if startup_value != "not found":  # meaning there is a value
-            return f'{startup_value}: {startup_option[startup_value]}' if startup_value in startup_option.keys() \
-                else f'{startup_value}: New Value! Check source code.'
+        if startup_value != "not found":
+            return (f'{startup_value}: {startup_option[startup_value]}'
+                    if startup_value in startup_option
+                    else f'{startup_value}: New Value! Check source code.')
 
         return startup_value
 
     def startup_urls(self):
         """
         Returns the startup URLs.
+
+        Chrome / older Edge store these as a list at session.startup_urls.
+        Newer Edge encrypts them as a hex blob at session.startup_urls_edge_enclave.
         """
-        url_list = f''
+        url_list = ''
         try:
-            urls = self.prefs.get("session").get("startup_urls")
+            session = self.prefs.get("session") or {}
+            urls = session.get("startup_urls")
+            if urls is None:
+                enclave = session.get("startup_urls_edge_enclave")
+                if isinstance(enclave, str) and len(enclave) > 50:
+                    return "\n     Encrypted (Edge enclave protected - cannot decode)"
         except (KeyError, IndexError, AttributeError, TypeError):
-            urls = "not found"
-            url_list = f'\n     Nil'
+            urls = None
 
-        if urls != "not found":  # meaning there are startup URLs.
-            # returns a list of one or more URLs which must be broken down.
+        if urls:  # guards against both None and an empty list
             for url in urls:
-                url_list = url_list + f'\n     {url}'
+                url_list += f'\n     {url}'
 
-        return url_list
+        return url_list if url_list else '\n     Nil'
 
     def homepage(self):
         """
@@ -267,21 +301,22 @@ class Preferences:
         try:
             home = self.prefs.get("homepage")
         except (KeyError, IndexError, AttributeError, TypeError):
-            home = "not found"
+            home = None
 
+        if home is None:
+            return "not found"
         return "None" if home == "" else home
 
     def homepagenewtab(self):
         """
         Returns whether the home page button is a new tab.
         """
-
         try:
             homenewtab = self.prefs.get("homepage_is_newtabpage")
         except (KeyError, IndexError, AttributeError, TypeError):
-            homenewtab = "not found"
+            homenewtab = None
 
-        return homenewtab
+        return homenewtab if homenewtab is not None else "not found"
 
     def exit_type(self):
         """
