@@ -41,7 +41,7 @@ import numpy as np
 import io
 import threading
 
-__version__ = '2026-Mar-1'
+__version__ = '2026-Apr-30'
 
 class ModernChromeParserGUI:
     def __init__(self, root):
@@ -126,7 +126,7 @@ class ModernChromeParserGUI:
             'Bookmarks': {'enabled': True, 'query': 'Bookmarks'},
             'Preferences': {'enabled': True, 'query': 'Preferences'},
             'Extensions': {'enabled': True, 'query': 'Extensions'},
-            'Web Assist (Edge)': {'enabled': False, 'query': 'Web Assist'}
+            'Web Assist (Edge)': {'enabled': True, 'query': 'Web Assist'}
         }
 
         # Create BooleanVar for each artifact
